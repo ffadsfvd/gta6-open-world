@@ -16,6 +16,7 @@ if (shot) {
 } else {
   game.showTitle();
   game.start();
+  window.__gameReady = true;
   // Browsers only allow sound after a gesture: the first click or key starts it.
   const unlock = () => game.audio.unlock();
   window.addEventListener('pointerdown', unlock, { once: true });

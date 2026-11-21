@@ -63,8 +63,7 @@ export class MusicPlayer {
     if (this.song === song) return;
     this.song = song;
     this.step = 0;
-    if (!this.engine.ready) return;
-    this.nextTime = this.engine.now + 0.08;
+    this.nextTime = this.engine.ready ? this.engine.now + 0.08 : 0;
     if (!this.timer) this.timer = setInterval(() => this.schedule(), 25);
   }
 
@@ -83,6 +82,8 @@ export class MusicPlayer {
     if (!this.song || !e.ready) return;
     const song = this.song;
     const sixteenth = 60 / song.bpm / 4;
+    // After a long silence (tab hidden, audio just unlocked) restart the clock instead of catching up.
+    if (this.nextTime < e.now - 0.25) this.nextTime = e.now + 0.05;
     while (this.nextTime < e.now + 0.12) {
       this.playStep(song, this.step % 16, Math.floor(this.step / 16) % song.chords.length, this.nextTime - e.now, sixteenth);
       this.step += 1;

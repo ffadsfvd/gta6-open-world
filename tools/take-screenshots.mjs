@@ -101,7 +101,7 @@ async function capture(cdp, url, outFile, timeoutMs, evaluate = null) {
   let ready = false;
   while (Date.now() - started < timeoutMs) {
     await sleep(300);
-    const result = await cdp.send('Runtime.evaluate', { expression: 'window.__shotReady === true', returnByValue: true });
+    const result = await cdp.send('Runtime.evaluate', { expression: 'window.__shotReady === true || window.__gameReady === true', returnByValue: true });
     if (result.result.value === true) {
       ready = true;
       break;
@@ -112,6 +112,14 @@ async function capture(cdp, url, outFile, timeoutMs, evaluate = null) {
   if (evaluate) {
     const result = await cdp.send('Runtime.evaluate', { expression: evaluate, returnByValue: true });
     console.log(`  eval: ${JSON.stringify(result.result.value ?? result.result.description ?? result.exceptionDetails?.text)}`);
+  }
+  const script = argument('--script');
+  if (script) {
+    const body = readFileSync(resolve(root, script), 'utf8');
+    const result = await cdp.send('Runtime.evaluate', { expression: `(async () => { ${body}\n })()`, awaitPromise: true, returnByValue: true });
+    if (result.exceptionDetails) console.log(`  script error: ${result.exceptionDetails.exception?.description ?? result.exceptionDetails.text}`);
+    else console.log(`  script: ${JSON.stringify(result.result.value, null, 1)}`);
+    await sleep(300);
   }
   for (let quality = 92; quality >= 40; quality -= 6) {
     const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality, captureBeyondViewport: false });

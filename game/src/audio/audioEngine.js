@@ -5,8 +5,12 @@
 export class AudioEngine {
   constructor() {
     this.context = null;
-    this.ready = false;
     this.volumes = { master: 0.8, music: 0.55, sfx: 0.85 };
+  }
+
+  /** True once the browser lets the context run (after a real click or key press). */
+  get ready() {
+    return this.context !== null && this.context.state === 'running';
   }
 
   /** Creates or resumes the context; call from a user gesture. */
@@ -31,8 +35,7 @@ export class AudioEngine {
       for (let index = 0; index < data.length; index += 1) data[index] = Math.random() * 2 - 1;
       this.applyVolumes();
     }
-    if (this.context.state === 'suspended') this.context.resume();
-    this.ready = true;
+    if (this.context.state === 'suspended') this.context.resume().catch(() => {});
   }
 
   setVolumes(volumes) {
