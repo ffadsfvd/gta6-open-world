@@ -37,6 +37,7 @@ import { PLACES } from '../world/cityPlan.js';
 import { SIGNAL_HEAD_Y } from '../world/trafficSignals.js';
 import { RoadNetwork } from '../ai/roadNetwork.js';
 import { createRenderer } from '../render/renderer.js';
+import { PostProcessing } from '../render/postProcessing.js';
 import { Sky, createEnvironmentMap } from '../render/sky.js';
 import { Lighting } from '../render/lighting.js';
 import { createTextures } from '../render/textures.js';
@@ -72,6 +73,7 @@ export class Game {
     const { renderer, camera } = createRenderer(this.canvas, quality);
     this.renderer = renderer;
     this.camera = camera;
+    this.post = quality === 'high' ? new PostProcessing(renderer) : null;
     this.scene = new THREE.Scene();
     const sun = new THREE.Vector3(SUN_DIRECTION.x, SUN_DIRECTION.y, SUN_DIRECTION.z).normalize();
     this.sky = new Sky(this.scene, sun);
@@ -333,7 +335,8 @@ export class Game {
     if (this.state === 'map') this.fullMap.draw();
     this.screenEffects.update(dt, this.player.character);
     this.audio.update(dt);
-    this.renderer.render(this.scene, this.camera);
+    if (this.post) this.post.render(this.scene, this.camera);
+    else this.renderer.render(this.scene, this.camera);
   }
 
   /** Runs `seconds` of simulation in fixed steps (screenshot scenes, tests). */

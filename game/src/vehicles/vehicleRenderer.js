@@ -49,7 +49,6 @@ export class VehicleRenderer {
   sync(vehicles, glow, time) {
     for (const group of Object.values(this.groups)) group.count = 0;
     let wheelCount = 0;
-    const flash = Math.floor(time * 7) % 2;
     for (const vehicle of vehicles) {
       if (!vehicle.active) continue;
       const group = this.groups[vehicle.type];
@@ -94,8 +93,9 @@ export class VehicleRenderer {
         }
       }
       if (vehicle.siren) {
+        const phase = Math.floor(time * 7 + vehicle.id * 0.5) % 2;
         model.lights.bars.forEach(([lx, ly, lz, color], barIndex) => {
-          const on = (barIndex === 0) === (flash === 0);
+          const on = (barIndex === 0) === (phase === 0);
           lampPoint.set(lx, ly, lz).applyMatrix4(tempMatrix);
           if (color === 'red') glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 4.6 : 1.3, on ? 2.2 : 0.4, 0.06, 0.06);
           else glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 4.6 : 1.3, 0.06, on ? 0.35 : 0.06, on ? 2.6 : 0.45);

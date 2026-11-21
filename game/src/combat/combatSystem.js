@@ -16,6 +16,22 @@ export class CombatSystem {
     this.fireHold = 0;
     game.events.on('vehicleExploded', (e) => {
       const v = e.vehicle;
+      const driver = v.driver;
+      if (driver) {
+        // Whoever is inside a car that blows up is thrown out, badly hurt.
+        if (driver.kind === 'player') game.player.exitVehicle();
+        else {
+          driver.vehicle = null;
+          v.driver = null;
+          v.ai = null;
+          const side = v.localToWorld(v.model.door.x, 0);
+          driver.x = side.x;
+          driver.z = side.z;
+        }
+        const killed = driver.takeDamage(driver.kind === 'player' ? 85 : 200, v.lastImpactBy);
+        driver.knockDown(-Math.cos(v.yaw) * 5, Math.sin(v.yaw) * 5, 3, 5);
+        if (killed) game.events.emit('characterKilled', { victim: driver, attacker: v.lastImpactBy, weapon: 'explosion' });
+      }
       explode(game, v.x, v.y + 0.6, v.z, { radius: 8, damage: 110, source: v.lastImpactBy, fromVehicle: true });
     });
   }

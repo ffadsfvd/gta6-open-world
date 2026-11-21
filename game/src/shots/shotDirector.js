@@ -57,6 +57,11 @@ function coverScene(game) {
   game.player.enabled = false;
   game.population.walkerTarget = 70;
   game.population.reset();
+  // Keep the chase lane clear: ambient traffic near the car goes, oncoming cars are placed below.
+  for (const vehicle of [...game.population.traffic]) {
+    if (Math.hypot(vehicle.x - car.x, vehicle.z - car.z) < 170) game.vehicles.remove(vehicle);
+  }
+  game.population.traffic = game.population.traffic.filter((vehicle) => vehicle.active);
   game.missions.start({
     id: 'badgeTroubleShot', title: 'Badge Trouble', story: false, reward: 0,
     steps: () => [loseCops("It's a setup! *Lose the cops*, then head home.", 0, PLACES.safehouse)],
@@ -68,10 +73,10 @@ function coverScene(game) {
     unit.vehicle.vz = 24;
   }
   oncomingTraffic(game, car.x, car.z + 80, 3);
-  for (let index = 0; index < 14; index += 1) game.population.spawnWalker({ x: car.x - 6, z: car.z + 75 }, 0, 34);
+  for (let index = 0; index < 18; index += 1) game.population.spawnWalker({ x: car.x - 6, z: car.z + 75 }, 0, 36);
   game.followCamera.view = 0;
   game.followCamera.lookBack = true;
-  game.simulate(3.2);
+  game.simulate(3.0);
 }
 
 /** On foot in Mercado Plaza: pistol drawn on Crane's crew, the crowd scattering. */
@@ -127,6 +132,7 @@ function streetScene(game) {
   for (const member of game.missions.current.vars.crew) member.brain.provoke();
   settleCamera(game);
   game.combat.firePlayerShot(game.combat.arsenal.spec);
+  game.wanted.setLevel(1);
   game.simulate(0.9);
   settleCamera(game);
   game.combat.firePlayerShot(game.combat.arsenal.spec);

@@ -58,10 +58,26 @@ export class PopulationManager {
 
   spawnWalker(near, minDistance, maxDistance) {
     const game = this.game;
+    if (near.x > 110 && this.rng.chance(0.32)) return this.spawnSeafrontWalker(near, minDistance, maxDistance);
     const spot = randomSidewalkSpot(this.rng, near, minDistance, maxDistance);
     if (!spot) return null;
     const walker = game.characters.spawn('pedestrian', spot.x, spot.z, randomAppearance(this.rng));
     walker.brain = new PedestrianBrain(walker, this.rng.fork(walker.id), spot);
+    this.walkers.push(walker);
+    return walker;
+  }
+
+  /** A stroller on the Seabreeze promenade or a beach-goer on the sand. */
+  spawnSeafrontWalker(near, minDistance, maxDistance) {
+    const rng = this.rng;
+    const z = Math.max(-318, Math.min(236, near.z + rng.range(-maxDistance, maxDistance)));
+    const promenade = rng.chance(0.45);
+    const x = promenade ? rng.range(249, 254) : rng.range(259, 290);
+    const d = Math.hypot(x - near.x, z - near.z);
+    if (d < minDistance || d > maxDistance || Math.abs(z) < 8) return null;
+    const area = promenade ? { minX: 248.6, maxX: 254.2, minZ: z - 55, maxZ: z + 55 } : { minX: 258, maxX: 292, minZ: z - 28, maxZ: z + 28 };
+    const walker = this.game.characters.spawn('pedestrian', x, z, randomAppearance(rng));
+    walker.brain = new PedestrianBrain(walker, rng.fork(walker.id), { bx: 6, bz: 3, corner: 1, area });
     this.walkers.push(walker);
     return walker;
   }

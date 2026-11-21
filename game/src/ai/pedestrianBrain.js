@@ -22,9 +22,15 @@ export class PedestrianBrain {
     this.threat = null;
     this.target = null;
     this.plaza = spot.plaza ?? false;
+    this.area = spot.area ?? null;
     this.braveness = rng.next();
     if (!this.clockwise) this.corner = (this.corner + 3) % 4;
     this.setCornerTarget();
+    if (this.area) {
+      this.mode = 'wander';
+      this.timer = Infinity;
+      this.pickWanderTarget();
+    }
   }
 
   setCornerTarget() {
@@ -61,13 +67,19 @@ export class PedestrianBrain {
 
   resumeWalking() {
     const character = this.character;
+    character.handsUp = false;
+    if (this.area) {
+      this.mode = 'wander';
+      this.timer = Infinity;
+      this.pickWanderTarget();
+      return;
+    }
     const corner = nearestCorner(character.x, character.z);
     this.bx = corner.bx;
     this.bz = corner.bz;
     this.corner = corner.corner;
     this.mode = 'walk';
     this.crossing = null;
-    character.handsUp = false;
     this.setCornerTarget();
   }
 
@@ -94,6 +106,11 @@ export class PedestrianBrain {
   }
 
   pickWanderTarget() {
+    if (this.area) {
+      const a = this.area;
+      this.target = { x: this.rng.range(a.minX, a.maxX), z: this.rng.range(a.minZ, a.maxZ) };
+      return;
+    }
     const b = blockBounds(this.bx, this.bz);
     this.target = { x: this.rng.range(b.lotMinX + 3, b.lotMaxX - 3), z: this.rng.range(b.lotMinZ + 3, b.lotMaxZ - 3) };
   }
