@@ -23,8 +23,8 @@ export default {
     ]),
     goTo({ x: 241.75, z: 200 }, 'Get to the *starting line* on Seabreeze Boulevard in a car.', { radius: 7, vehicle: 'any' }),
     race(STRAND_ROUTE, [
-      { type: 'muscle', paint: '#ffbe0b', skill: 0.95, outfit: OUTFITS.dash },
-      { type: 'sports', paint: '#7209b7', skill: 0.86, outfit: OUTFITS.gang },
+      { type: 'muscle', paint: '#ffbe0b', skill: 0.9, outfit: OUTFITS.dash },
+      { type: 'sports', paint: '#7209b7', skill: 0.82, outfit: OUTFITS.gang },
     ], 'Strand Sprint'),
     talk([
       ['dash', 'You got lucky, Moreno. Crane will not be.'],

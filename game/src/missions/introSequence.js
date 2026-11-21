@@ -5,7 +5,7 @@ import * as THREE from 'three';
 const SHOTS = [
   { from: [560, 85, 210], to: [470, 60, 70], lookFrom: [120, 25, -20], lookTo: [60, 20, -60], seconds: 5, caption: 'Solmara, on the Atlantic coast. Sun, sea and three hundred days of summer.' },
   { from: [246, 7, 230], to: [246, 5, 90], lookFrom: [238, 3, 60], lookTo: [236, 3, -80], seconds: 4.5, caption: 'Three years ago, Kai Moreno took the fall for a job that went wrong.' },
-  { from: [262, 5, 62], to: [246, 3, 47], lookFrom: [231, 1.6, 40], lookTo: [231, 1.6, 40], seconds: 4, caption: 'Now he is home. And the docks have a new owner.' },
+  { from: [262, 6, 70], to: [252, 3.4, 47], lookFrom: [250, 1.6, 39], lookTo: [250, 1.6, 30], seconds: 4, caption: 'Now he is home. And the docks have a new owner.' },
 ];
 
 export class IntroSequence {
@@ -20,6 +20,8 @@ export class IntroSequence {
     this.active = true;
     this.index = 0;
     this.time = 0;
+    // The key that chose New Game must not also skip the intro.
+    this.guard = 0.6;
     this.onDone = onDone;
     this.game.followCamera.override = this.override;
     this.showCaption();
@@ -43,7 +45,8 @@ export class IntroSequence {
 
   update(dt, input) {
     if (!this.active) return;
-    if (input.wasPressed('confirm') || input.wasPressed('interact') || input.wasPressed('pause') || input.wasPressed('jump')) {
+    this.guard = Math.max(0, this.guard - dt);
+    if (this.guard <= 0 && (input.wasPressed('confirm') || input.wasPressed('interact') || input.wasPressed('pause') || input.wasPressed('jump'))) {
       this.finish();
       return;
     }

@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 
 const KINDS = {
-  exhaust: { additive: false, life: [0.5, 0.9], size: [0.25, 0.4], grow: 1.3, color: [0.6, 0.6, 0.6], end: [0.75, 0.75, 0.75], alpha: 0.22, gravity: -0.3, drag: 1.6 },
+  exhaust: { additive: false, life: [0.45, 0.8], size: [0.16, 0.26], grow: 1.6, color: [0.62, 0.62, 0.64], end: [0.8, 0.8, 0.8], alpha: 0.12, gravity: -0.3, drag: 1.6 },
   smoke: { additive: false, life: [2.0, 3.4], size: [1.0, 1.8], grow: 2.4, color: [0.18, 0.17, 0.17], end: [0.45, 0.44, 0.43], alpha: 0.5, gravity: -0.9, drag: 0.7 },
   tireSmoke: { additive: false, life: [1.0, 1.8], size: [0.8, 1.3], grow: 2.2, color: [0.92, 0.92, 0.92], end: [0.85, 0.85, 0.85], alpha: 0.32, gravity: -0.35, drag: 1.3 },
   dust: { additive: false, life: [0.8, 1.5], size: [0.6, 1.2], grow: 1.8, color: [0.88, 0.74, 0.52], end: [0.92, 0.82, 0.66], alpha: 0.38, gravity: -0.15, drag: 1.5 },

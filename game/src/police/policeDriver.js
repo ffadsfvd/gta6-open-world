@@ -88,11 +88,9 @@ export class PoliceDriver {
     }
     const local = vehicle.worldToLocal(aimX, aimZ);
     const speed = vehicle.forwardSpeed;
-    const look = Math.max(4, Math.hypot(local.x, local.z));
-    const axle = vehicle.spec.wheelBase * 2;
-    const limit = vehicle.spec.steerMax * (1 - Math.min(Math.abs(speed) / 50, 1) * 0.7);
-    let steer = clamp(Math.atan2(2 * axle * -local.x, look * look) / limit, -1, 1);
-    if (local.z < 0 && Math.abs(local.x) < 25) steer = local.x > 0 ? -1 : 1;
+    // Heading-error steering: decisive at corners and for targets behind, calm when lined up.
+    const angleLeft = Math.atan2(local.x, local.z);
+    const steer = clamp(-angleLeft * 2.2, -1, 1);
     const footTarget = !player.vehicle;
     const level = game.wanted.level;
     const targetSpeed = Math.hypot(tvx, tvz);

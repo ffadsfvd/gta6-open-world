@@ -18,6 +18,8 @@ export class MissionRunner {
     this.cooldown = 0;
     this.frozen = false;
     this.lastPrompt = 0;
+    this.retry = null;
+    this.retryTimer = 0;
     game.events.on('playerWasted', () => this.fail('You were flatlined.'));
     game.events.on('playerBusted', () => this.fail('You were arrested.'));
   }
@@ -157,6 +159,10 @@ export class MissionRunner {
     game.notifications.banner(def.story ? 'MISSION FAILED' : 'JOB FAILED', reason, 'fail', 4);
     game.events.emit('missionFailed', { id: def.id, reason });
     this.cooldown = 4;
+    if (def.story) {
+      this.retry = def;
+      this.retryTimer = 14;
+    }
   }
 
   /** Ends the mission: hands spawned cars back to the world and drops the crew. */
@@ -189,6 +195,7 @@ export class MissionRunner {
     this.cooldown = Math.max(0, this.cooldown - dt);
     if (!this.current) {
       this.syncContacts();
+      if (this.offerRetry(dt)) return;
       this.offerContacts();
       return;
     }
@@ -204,6 +211,23 @@ export class MissionRunner {
     if (this.current !== mission) return;
     if (result === true) this.advance();
     else if (typeof result === 'string' && result.startsWith('fail:')) this.fail(result.slice(5));
+  }
+
+  /** For a while after a failed story mission, E starts it again right away. */
+  offerRetry(dt) {
+    const game = this.game;
+    if (!this.retry || this.retryTimer <= 0) return false;
+    if (game.fate.active) return true;
+    this.retryTimer -= dt;
+    if (game.wanted.level > 0) return false;
+    game.hud.hint(`Mission failed: <b>${this.retry.title}</b><br>Press <kbd>E</kbd> to retry.`, 0.2);
+    if (game.input.wasPressed('interact')) {
+      const def = this.retry;
+      this.retry = null;
+      this.cooldown = 0;
+      this.start(def);
+    }
+    return true;
   }
 
   offerContacts() {

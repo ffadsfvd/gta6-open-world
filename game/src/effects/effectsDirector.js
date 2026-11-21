@@ -96,7 +96,7 @@ export class EffectsDirector {
         if (emit && sandy) p.burst('dust', 1, wheel.x, vehicle.y + 0.3, wheel.z, vehicle.vx * 0.15, 1, vehicle.vz * 0.15, 0.8);
       }
       if (!emit) continue;
-      if (vehicle.driver && !vehicle.destroyed && vehicle.speed < 14) {
+      if (vehicle.driver && !vehicle.destroyed && vehicle.speed < 9 && (vehicle.controls.throttle > 0.2 || vehicle.speed < 0.5)) {
         p.burst('exhaust', 1, rear.x, vehicle.y + 0.35, rear.z, -Math.sin(vehicle.yaw) * 1.2, 0.3, -Math.cos(vehicle.yaw) * 1.2, 0.2);
       }
       const share = vehicle.healthShare;

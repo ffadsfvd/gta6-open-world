@@ -13,6 +13,7 @@ function near(a, b, radius) {
 
 export function talk(lines, { freeze = true } = {}) {
   return {
+    kind: 'talk',
     objective: '',
     start(ctx) {
       this.done = false;
@@ -33,6 +34,8 @@ export function talk(lines, { freeze = true } = {}) {
 /** Reach a place. vehicle: 'any' (be driving), 'foot', a vars name, or null (either). */
 export function goTo(place, text, { radius = 5, vehicle = null } = {}) {
   return {
+    kind: 'goTo',
+    place,
     objective: text,
     update(dt, ctx) {
       const player = ctx.game.player.character;
@@ -49,6 +52,7 @@ export function goTo(place, text, { radius = 5, vehicle = null } = {}) {
 
 export function getInAnyVehicle(text) {
   return {
+    kind: 'getInAnyVehicle',
     objective: text,
     update: (dt, ctx) => Boolean(ctx.game.player.character.vehicle),
   };
@@ -56,6 +60,8 @@ export function getInAnyVehicle(text) {
 
 export function enterVehicle(name, text) {
   return {
+    kind: 'enterVehicle',
+    name,
     objective: text,
     update(dt, ctx) {
       const vehicle = ctx.vars[name];
@@ -72,6 +78,9 @@ export function enterVehicle(name, text) {
 
 export function deliver(name, place, text, { radius = 6 } = {}) {
   return {
+    kind: 'deliver',
+    name,
+    place,
     objective: text,
     update(dt, ctx) {
       const vehicle = ctx.vars[name];
@@ -106,6 +115,8 @@ export function call(fn) {
 
 export function eliminate(name, text) {
   return {
+    kind: 'eliminate',
+    name,
     objective: text,
     update(dt, ctx) {
       const crew = ctx.vars[name] ?? [];
@@ -122,6 +133,8 @@ export function eliminate(name, text) {
 
 export function chase(name, text, { escape = 240, stopShare = 0.3 } = {}) {
   return {
+    kind: 'chase',
+    name,
     objective: text,
     update(dt, ctx) {
       const target = ctx.vars[name];
@@ -142,6 +155,8 @@ export function chase(name, text, { escape = 240, stopShare = 0.3 } = {}) {
 /** A pickup lying at vars[name] (a {x, z} point); done when Kai reaches it. */
 export function collect(name, text, color = '#ffb703') {
   return {
+    kind: 'collect',
+    name,
     objective: text,
     update(dt, ctx) {
       const spot = ctx.vars[name];
@@ -160,6 +175,7 @@ export function collect(name, text, color = '#ffb703') {
 
 export function loseCops(text, level = 0, routeTo = null) {
   return {
+    kind: 'loseCops',
     objective: text,
     start(ctx) {
       if (level > 0) ctx.game.wanted.setLevel(level);
@@ -213,6 +229,8 @@ export function clearTimeLimit() {
  */
 export function race(checkpoints, rivals, title) {
   return {
+    kind: 'race',
+    checkpoints,
     objective: title,
     start(ctx) {
       const game = ctx.game;
@@ -260,6 +278,11 @@ export function race(checkpoints, rivals, title) {
       }
       const player = game.player.character;
       const point = checkpoints[this.index];
+      for (const racer of this.racers) {
+        if (!racer.ai) continue;
+        const lead = racer.ai.index - this.index;
+        racer.ai.pace = lead > 1 ? 0.84 : lead < -1 ? 1.06 : 1;
+      }
       if (near(player, point, 10)) {
         this.index += 1;
         game.events.emit('checkpoint', { index: this.index });

@@ -99,7 +99,7 @@ export class Game {
     this.progress = new Progress(this.events);
     this.vehicles = new VehicleManager(this);
     this.characters = new CharacterManager(this);
-    const start = PLACES.safehouse;
+    const start = PLACES.start;
     const hero = this.characters.spawn('player', start.x, start.z, OUTFITS.player, { yaw: -Math.PI / 2 });
     hero.health = PLAYER_TUNING.maxHealth;
     this.player = new PlayerController(this, hero);
@@ -197,6 +197,8 @@ export class Game {
     this.hud.show(true);
     this.input.wantsLock = true;
     this.population.reset();
+    this.player.character.yaw = Math.PI / 2;
+    this.followCamera.snapBehind(Math.PI / 2);
     this.notifications.toast(`Welcome back to ${GAME_TITLE.split(' ')[0]}.`, '', 3);
     this.input.requestLock();
   }

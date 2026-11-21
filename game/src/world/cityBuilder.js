@@ -50,6 +50,9 @@ export function buildCity({ scene, textures, materials, atlas, collision, events
   addBuilding(shore.buckets, atlas, shore.warehouse, rng.fork(902), collision);
   shore.buckets.flush(group, materials, { noShadow: FLAT_BUCKETS });
   buildBackdrop(group, materials, rng.fork(77));
+  // Invisible walls where the hills begin, so nothing drives into the slopes.
+  collision.addBox(-372, -372, -346, 300, 80, 'boundary');
+  collision.addBox(-372, -372, 262, -346, 80, 'boundary');
   buildStreetscape(group, materials, collision, vegetation, props, signals, rng.fork(55));
   const treeRng = rng.fork(66);
   for (const tree of extras.trees) vegetation.addTree(tree.kind, tree.x, tree.z, treeRng.range(0, Math.PI * 2), 1);

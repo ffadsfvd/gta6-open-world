@@ -130,6 +130,7 @@ export function streetNameAt(x, z) {
 
 /** Named spots: mission givers, drop-offs, respawns. */
 export const PLACES = {
+  start: { x: 250, z: 39, label: 'Seabreeze promenade' },
   safehouse: { x: 231, z: 40, label: 'Seashell Apartments' },
   hospital: { x: 40, z: -169, label: 'St. Marisol Medical' },
   policeStation: { x: -169, z: -120, label: 'Solmara Bay Police' },

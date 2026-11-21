@@ -2,7 +2,7 @@
 // lateral grip that lets go under the handbrake (drifts), engine and brake curves, drag, body
 // roll and pitch, gravity off ledges and sinking in deep water.
 import { approach, clamp, damp } from '../core/mathUtils.js';
-import { WATER_LEVEL } from '../core/config.js';
+import { WATER_LEVEL, WORLD_BOUNDS } from '../core/config.js';
 import { groundHeight, isDeepWater, waterDepth } from '../world/terrain.js';
 import { districtAt } from '../world/cityPlan.js';
 
@@ -76,6 +76,15 @@ export function stepVehiclePhysics(vehicle, dt) {
   vehicle.vz = fz * forward + rz * side;
   vehicle.x += vehicle.vx * dt;
   vehicle.z += vehicle.vz * dt;
+  // The edge of the playable map: hills to the west and north, open sea beyond the pier.
+  if (vehicle.x < WORLD_BOUNDS.minX || vehicle.x > WORLD_BOUNDS.maxX) {
+    vehicle.x = Math.min(WORLD_BOUNDS.maxX, Math.max(WORLD_BOUNDS.minX, vehicle.x));
+    vehicle.vx *= -0.2;
+  }
+  if (vehicle.z < WORLD_BOUNDS.minZ || vehicle.z > WORLD_BOUNDS.maxZ) {
+    vehicle.z = Math.min(WORLD_BOUNDS.maxZ, Math.max(WORLD_BOUNDS.minZ, vehicle.z));
+    vehicle.vz *= -0.2;
+  }
 
   // Height: follow the ground, fall off ledges.
   const ground = groundHeight(vehicle.x, vehicle.z);

@@ -86,7 +86,7 @@ export class PoliceDispatcher {
     const game = this.game;
     const player = game.player.character;
     const car = player.vehicle;
-    if (!car || car.speed < 9) return;
+    if (!car || car.speed < 9) return false;
     const heading = Math.atan2(car.vx, car.vz);
     const aheadX = car.x + Math.sin(heading) * 110;
     const aheadZ = car.z + Math.cos(heading) * 110;
@@ -104,12 +104,13 @@ export class PoliceDispatcher {
         best = other;
       }
     }
-    if (!best || Math.hypot(node.x - car.x, node.z - car.z) < 60) return;
+    if (!best || Math.hypot(node.x - car.x, node.z - car.z) < 60) return false;
     const dx = (best.x - node.x) / 80;
     const dz = (best.z - node.z) / 80;
     const cx = node.x + dx * 22;
     const cz = node.z + dz * 22;
     const across = Math.atan2(dx, dz) + Math.PI / 2;
+    let placed = 0;
     for (const side of [-1, 1]) {
       const x = cx + -dz * side * 3.3;
       const z = cz + dx * side * 3.3;
@@ -120,8 +121,10 @@ export class PoliceDispatcher {
       unit.vehicle.vz = 0;
       unit.roadblock = true;
       this.deploy(unit, 3.5);
+      placed += 1;
     }
-    game.events.emit('roadblock', { x: cx, z: cz });
+    if (placed > 0) game.events.emit('roadblock', { x: cx, z: cz });
+    return placed > 0;
   }
 
   /** Officers climb out and continue on foot. */
@@ -221,8 +224,8 @@ export class PoliceDispatcher {
     if (level >= 3) {
       this.roadblockTimer -= dt;
       if (this.roadblockTimer <= 0) {
-        this.roadblockTimer = ROADBLOCK_GAP - level * 2;
-        this.spawnRoadblock();
+        // A failed placement (no straight road ahead, cars in the way) tries again soon.
+        this.roadblockTimer = this.spawnRoadblock() ? ROADBLOCK_GAP - level * 2 : 2.5;
       }
     }
     const playerSlow = !player.vehicle || player.vehicle.speed < 3;

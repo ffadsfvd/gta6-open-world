@@ -145,7 +145,8 @@ export class CombatSystem {
     game.events.emit('bulletImpact', { kind: hit.kind, x: hit.x, y: hit.y, z: hit.z, dx: dir.x, dz: dir.z });
     if (hit.kind === 'character') this.hurt(hit.character, damage * (hit.head ? 2.4 : 1), shooter, 'gun', dir);
     else if (hit.kind === 'vehicle') {
-      hit.vehicle.damage(damage * 1.7, shooter);
+      // NPC fire wears a getaway car down slowly; the player's shots wreck cars quickly.
+      hit.vehicle.damage(damage * (shooter.kind === 'player' ? 1.7 : 0.6), shooter);
       game.events.emit('vehicleShot', { vehicle: hit.vehicle, shooter });
     }
   }
