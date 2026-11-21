@@ -37,7 +37,52 @@ export class TrafficDriver {
     this.node = to;
     this.lane = lane;
     this.waypoints = [];
+    this.last = { x: line.sx, z: line.sz };
     this.pushLaneEnd(from, to, lane);
+  }
+
+  /**
+   * The point `look` metres ahead along the planned path, measured from where the car
+   * projects onto it, so a car pushed off its lane steers back promptly.
+   */
+  pathPointAhead(look) {
+    const vehicle = this.vehicle;
+    const start = this.last ?? { x: vehicle.x, z: vehicle.z };
+    const first = this.waypoints[0];
+    const sx = first.x - start.x;
+    const sz = first.z - start.z;
+    const length = Math.hypot(sx, sz) || 1;
+    const along = Math.max(0, Math.min(length, ((vehicle.x - start.x) * sx + (vehicle.z - start.z) * sz) / length));
+    let remaining = look;
+    let ax = start.x + (sx / length) * along;
+    let az = start.z + (sz / length) * along;
+    const offTrack = Math.hypot(vehicle.x - ax, vehicle.z - az);
+    remaining = Math.max(2.5, look - offTrack * 0.6);
+    for (const point of this.waypoints) {
+      const dx = point.x - ax;
+      const dz = point.z - az;
+      const leg = Math.hypot(dx, dz);
+      if (leg >= remaining) return { x: ax + (dx / leg) * remaining, z: az + (dz / leg) * remaining, offTrack };
+      remaining -= leg;
+      ax = point.x;
+      az = point.z;
+    }
+    return { x: ax, z: az, offTrack };
+  }
+
+  /** True when another moving car is inside the junction box and not travelling our way. */
+  junctionBusy(world, junction) {
+    const node = this.network.nodes[junction];
+    const vehicle = this.vehicle;
+    const fx = Math.sin(vehicle.yaw);
+    const fz = Math.cos(vehicle.yaw);
+    for (const other of world.vehicles.list) {
+      if (other === vehicle || !other.active || other.speed < 1.5) continue;
+      if (Math.abs(other.x - node.x) > 8.5 || Math.abs(other.z - node.z) > 8.5) continue;
+      const dot = (other.vx * fx + other.vz * fz) / other.speed;
+      if (dot < 0.75) return true;
+    }
+    return false;
   }
 
   pushLaneEnd(from, to, lane) {
@@ -115,24 +160,21 @@ export class TrafficDriver {
     this.panic = Math.max(0, this.panic - dt);
     this.hornTimer = Math.max(0, this.hornTimer - dt);
     while (this.waypoints.length < 6) this.queueNext();
-    // Drop waypoints we reached or passed.
+    // Drop waypoints we reached or passed, remembering the last one as the segment start.
+    // A stop line only counts once actually crossed, or cars would creep through reds.
     while (this.waypoints.length > 1) {
       const point = this.waypoints[0];
       const dx = point.x - vehicle.x;
       const dz = point.z - vehicle.z;
       const ahead = dx * Math.sin(vehicle.yaw) + dz * Math.cos(vehicle.yaw);
-      if (dx * dx + dz * dz < ARRIVE * ARRIVE || ahead < -1) this.waypoints.shift();
-      else break;
+      const radius = point.stop ? 0.6 : ARRIVE;
+      if (dx * dx + dz * dz < radius * radius || ahead < (point.stop ? -0.3 : -1)) {
+        this.last = this.waypoints.shift();
+      } else break;
     }
     const speed = vehicle.forwardSpeed;
-    const look = 4.5 + Math.max(0, speed) * 0.45;
-    let target = this.waypoints[this.waypoints.length - 1];
-    for (const point of this.waypoints) {
-      if (Math.hypot(point.x - vehicle.x, point.z - vehicle.z) >= look) {
-        target = point;
-        break;
-      }
-    }
+    const look = 4 + Math.max(0, speed) * 0.42;
+    const target = this.pathPointAhead(look);
     const local = vehicle.worldToLocal(target.x, target.z);
     const distance = Math.max(1, Math.hypot(local.x, local.z));
     const axle = vehicle.spec.wheelBase * 2;
@@ -159,11 +201,14 @@ export class TrafficDriver {
         const stopDistance = Math.hypot(point.x - vehicle.x, point.z - vehicle.z);
         if (stopDistance > 40) break;
         const light = this.signals.state(point.stop.junction, point.stop.axis);
-        const mustStop = light === 'red' || (light === 'yellow' && stopDistance > 6);
+        let mustStop = light === 'red' || (light === 'yellow' && stopDistance > 6);
+        // On green, still give way to cars already crossing the junction.
+        if (!mustStop && stopDistance < 12 && this.junctionBusy(world, point.stop.junction)) mustStop = true;
         if (mustStop) wanted = Math.min(wanted, Math.max(0, (stopDistance - STOP_MARGIN) * 0.8));
         break;
       }
     }
+    if (target.offTrack > 2.5) wanted = Math.min(wanted, 7);
     const gap = this.scanAhead(world, 6 + Math.max(0, speed) * 1.4);
     if (gap < 30) wanted = Math.min(wanted, Math.max(0, (gap - 2.2) * 1.1));
     if (gap < 4 && speed < 1) {
