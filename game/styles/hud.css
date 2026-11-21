@@ -209,6 +209,15 @@
   color: #ffd23f;
 }
 
+#objective-text small {
+  display: block;
+  margin-bottom: 2px;
+  font: italic 900 14px var(--display-font);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #ff9f6b;
+}
+
 #objective-text.pop {
   animation: objective-pop 0.5s ease-out;
 }

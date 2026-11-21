@@ -129,9 +129,11 @@ export class Hud {
     this.health.classList.toggle('low', player.health < 30);
     this.armour.classList.toggle('empty', player.armour <= 0);
     const objective = game.missions ? game.missions.objectiveText() : '';
-    if (objective !== this.lastObjective) {
-      this.lastObjective = objective;
-      this.objective.innerHTML = objective.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    const mission = game.missions && game.missions.current ? game.missions.current.def.title : '';
+    const line = objective ? `${mission ? `<small>${mission}</small>` : ''}${objective.replace(/\*([^*]+)\*/g, '<em>$1</em>')}` : '';
+    if (line !== this.lastObjective) {
+      this.lastObjective = line;
+      this.objective.innerHTML = line;
       this.objective.classList.remove('pop');
       void this.objective.offsetWidth;
       this.objective.classList.add('pop');

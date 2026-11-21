@@ -121,10 +121,11 @@ export class CollisionWorld {
   }
 
   /**
-   * Nearest hit of a 3D ray against the boxes (floor 0 to `top`), within maxDistance.
+   * Nearest hit of a 3D ray against the boxes (floor 0 to `top`), within maxDistance. Boxes
+   * smaller than `minSize` across (trunks, poles) are skipped when it is given.
    * Returns { distance, box, nx, ny, nz } or null.
    */
-  raycast(ox, oy, oz, dx, dy, dz, maxDistance) {
+  raycast(ox, oy, oz, dx, dy, dz, maxDistance, minSize = 0) {
     const ex = ox + dx * maxDistance;
     const ez = oz + dz * maxDistance;
     const boxes = this.query(Math.min(ox, ex), Math.min(oz, ez), Math.max(ox, ex), Math.max(oz, ez));
@@ -132,6 +133,7 @@ export class CollisionWorld {
     let bestDistance = maxDistance;
     for (let index = 0; index < boxes.length; index += 1) {
       const box = boxes[index];
+      if (minSize > 0 && box.maxX - box.minX < minSize && box.maxZ - box.minZ < minSize) continue;
       const result = rayBox(ox, oy, oz, dx, dy, dz, box);
       if (result && result.distance < bestDistance) {
         bestDistance = result.distance;

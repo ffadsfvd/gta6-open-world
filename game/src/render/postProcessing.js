@@ -46,7 +46,7 @@ void main() {
   color += (texture2D(tBloomA, vUv).rgb * 0.6 + texture2D(tBloomB, vUv).rgb * 0.8) * uBloom;
   float grey = dot(color, vec3(0.2126, 0.7152, 0.0722));
   color = mix(vec3(grey), color, uSaturation);
-  color *= vec3(1.03, 1.0, 0.96);
+  color *= vec3(1.05, 1.0, 0.93);
   float edge = smoothstep(0.42, 0.95, length((vUv - 0.5) * vec2(1.25, 1.0)));
   color *= 1.0 - edge * uVignette;
   gl_FragColor = vec4(color, 1.0);

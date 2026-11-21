@@ -85,7 +85,7 @@ export class FollowCamera {
 
   /** Pulls the camera in front of any wall between it and the target. */
   avoidWalls(wantedDistance, dirX, dirY, dirZ) {
-    const hit = this.collision.raycast(this.target.x, this.target.y, this.target.z, dirX, dirY, dirZ, wantedDistance + 0.4);
+    const hit = this.collision.raycast(this.target.x, this.target.y, this.target.z, dirX, dirY, dirZ, wantedDistance + 0.4, 1.6);
     const limit = hit ? Math.max(0.9, hit.distance - 0.45) : wantedDistance;
     if (limit < this.distance) this.distance = limit;
     else this.distance = damp(this.distance, limit, 3.5, 1 / 60);
