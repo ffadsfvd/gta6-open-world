@@ -3,16 +3,50 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
-<style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-</style>
+<title>Solmara Heat</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./styles/base.css">
+<link rel="stylesheet" href="./styles/hud.css">
+<link rel="stylesheet" href="./styles/menus.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
+<canvas id="game-canvas" aria-label="Solmara Heat: an open-world crime game in a sun-soaked coastal city"></canvas>
+<div id="hud" class="hidden">
+  <div id="hud-top-right">
+    <div id="weapon-panel"><span id="weapon-icon"></span><span id="weapon-ammo"></span></div>
+    <div id="money-counter">$0</div>
+    <div id="wanted-stars"></div>
+    <div id="mission-timer" class="hidden"></div>
+  </div>
+  <div id="help-box" class="hidden"></div>
+  <div id="mission-title" class="hidden"></div>
+  <div id="minimap-frame">
+    <canvas id="minimap-canvas" width="400" height="400"></canvas>
+    <div id="health-bar" class="stat-bar"><i></i><b></b></div>
+    <div id="armour-bar" class="stat-bar"><i></i><b></b></div>
+  </div>
+  <div id="objective-text"></div>
+  <div id="zone-label"></div>
+  <div id="vehicle-panel" class="hidden">
+    <canvas id="speedometer-canvas" width="280" height="180"></canvas>
+    <div id="vehicle-name"></div>
+    <div id="radio-station"></div>
+  </div>
+  <div id="crosshair" class="hidden"></div>
+  <div id="toast-stack"></div>
+</div>
+<div id="big-message" class="hidden"><div id="big-message-title"></div><div id="big-message-sub"></div></div>
+<div id="dialogue-box" class="hidden">
+  <canvas id="dialogue-portrait" width="168" height="168"></canvas>
+  <div id="dialogue-body"><div id="dialogue-name"></div><div id="dialogue-text"></div><div id="dialogue-hint">E / Enter to continue</div></div>
+</div>
+<div id="damage-vignette"></div>
+<div id="screen-fade"></div>
+<div id="intro-caption" class="hidden"></div>
+<div id="full-map" class="hidden"><canvas id="full-map-canvas" width="1200" height="1000"></canvas><div id="map-legend"></div></div>
+<div id="pause-menu" class="menu-screen hidden"></div>
+<div id="start-screen" class="menu-screen"></div>
 <p id="status" role="status" aria-live="polite"></p>
 <script type="module" src="./src/main.js"></script>
 </body>

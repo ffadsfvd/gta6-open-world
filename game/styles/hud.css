@@ -1,0 +1,7 @@
+/* In-game HUD: filled in with the HUD modules. */
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
