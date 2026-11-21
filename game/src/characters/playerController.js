@@ -17,6 +17,7 @@ export class PlayerController {
     this.enabled = true;
     this.sensitivity = CAMERA_TUNING.mouseSensitivity;
     this.invertY = false;
+    this.aiming = false;
   }
 
   update(dt) {
@@ -51,6 +52,7 @@ export class PlayerController {
     const dz = fz * forward + fx * strafe;
     const armed = character.weapon !== 'fists';
     const aiming = input.isDown('aim') && armed;
+    this.aiming = aiming;
     let speed = input.isDown('sprint') ? PLAYER_TUNING.sprintSpeed : PLAYER_TUNING.runSpeed;
     if (aiming) speed = PLAYER_TUNING.walkSpeed;
     character.setMove(dx, dz, speed);

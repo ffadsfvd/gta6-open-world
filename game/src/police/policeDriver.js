@@ -15,6 +15,7 @@ export class PoliceDriver {
     this.reverse = 0;
     this.reverseSteer = 1;
     this.aggression = rng.range(0.7, 1);
+    this.side = rng.chance(0.5) ? 1 : -1;
     this.mode = 'pursue';
     this.hold = null;
   }
@@ -67,6 +68,12 @@ export class PoliceDriver {
       const lead = Math.min(1.1, distance / 22);
       aimX = target.x + tvx * lead;
       aimZ = target.z + tvz * lead;
+      if (player.vehicle && distance < 26) {
+        // Pull alongside rather than straight into the bumper.
+        const speed = Math.hypot(tvx, tvz) || 1;
+        aimX += (-tvz / speed) * this.side * 3;
+        aimZ += (tvx / speed) * this.side * 3;
+      }
       this.waypoints = [];
     } else {
       this.replan -= dt;
@@ -88,9 +95,14 @@ export class PoliceDriver {
     if (local.z < 0 && Math.abs(local.x) < 25) steer = local.x > 0 ? -1 : 1;
     const footTarget = !player.vehicle;
     const level = game.wanted.level;
+    const targetSpeed = Math.hypot(tvx, tvz);
     let wanted = clear ? 46 * this.aggression : 30;
     if (footTarget && distance < 25) wanted = Math.max(0, (distance - 7) * 0.9);
-    else if (!footTarget && distance < 14 && level < 3) wanted = Math.hypot(tvx, tvz) + 2;
+    else if (!footTarget && clear && distance < 22) {
+      // Close behind a suspect's car: shadow it, only ramming from four stars.
+      const push = level >= 4 ? 5 : distance > 9 ? 1.5 : -1;
+      wanted = Math.max(4, targetSpeed + push);
+    }
     wanted *= 1 - Math.abs(steer) * 0.45;
     if (local.z < 0) wanted = Math.min(wanted, 12);
     // Stuck: wanted to go but did not move; back up with the wheel turned the other way.

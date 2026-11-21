@@ -135,7 +135,7 @@ export class EffectsDirector {
   drawGlows(glow) {
     for (const flash of this.flashes) {
       const k = Math.max(0, flash.time / 0.35);
-      glow.add(flash.x, flash.y, flash.z, 18 * k + 4, 1.4 * k, 0.8 * k, 0.3 * k);
+      glow.add(flash.x, flash.y, flash.z, 9 * k + 3, 1.2 * k, 0.7 * k, 0.25 * k);
     }
   }
 }

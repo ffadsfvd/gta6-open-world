@@ -97,8 +97,8 @@ export class VehicleRenderer {
         model.lights.bars.forEach(([lx, ly, lz, color], barIndex) => {
           const on = (barIndex === 0) === (flash === 0);
           lampPoint.set(lx, ly, lz).applyMatrix4(tempMatrix);
-          if (color === 'red') glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 3.2 : 1.0, on ? 1.6 : 0.3, 0.05, 0.05);
-          else glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 3.2 : 1.0, 0.05, on ? 0.25 : 0.05, on ? 1.8 : 0.35);
+          if (color === 'red') glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 4.6 : 1.3, on ? 2.2 : 0.4, 0.06, 0.06);
+          else glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 4.6 : 1.3, 0.06, on ? 0.35 : 0.06, on ? 2.6 : 0.45);
         });
       }
     }

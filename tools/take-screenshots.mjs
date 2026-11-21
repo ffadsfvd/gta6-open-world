@@ -93,7 +93,10 @@ function jpegSize(buffer) {
 }
 
 async function capture(cdp, url, outFile, timeoutMs, evaluate = null) {
+  // Clear the flag first so the previous page can never answer for the next one.
+  await cdp.send('Runtime.evaluate', { expression: 'window.__shotReady = false' });
   await cdp.send('Page.navigate', { url });
+  await sleep(500);
   const started = Date.now();
   let ready = false;
   while (Date.now() - started < timeoutMs) {

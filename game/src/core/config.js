@@ -26,7 +26,7 @@ export const SHORE = {
 export const PIER = { minX: 255, maxX: 402, halfWidth: 6, deck: 0.6 };
 export const WORLD_BOUNDS = { minX: -345, maxX: 405, minZ: -345, maxZ: 296 };
 
-export const SUN_DIRECTION = { x: -0.62, y: 0.56, z: 0.55 };
+export const SUN_DIRECTION = { x: -0.4, y: 0.66, z: 0.64 };
 
 export const POPULATION = {
   traffic: 26,

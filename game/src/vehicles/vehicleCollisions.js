@@ -149,7 +149,7 @@ export function collideVehicles(vehicles, onCrash) {
       b.yawRate -= ((pb.z * jx - pb.x * jz) / b.inertia) * 0.5;
       const hit = -relative;
       if (hit > IMPACT_THRESHOLD * 0.75) {
-        const damage = (hit - IMPACT_THRESHOLD * 0.75) * DAMAGE_PER_MS;
+        const damage = (hit - IMPACT_THRESHOLD * 0.75) * DAMAGE_PER_MS * 0.55;
         a.damage(damage * (b.mass / total) * 1.4, b.driver);
         b.damage(damage * (a.mass / total) * 1.4, a.driver);
       }

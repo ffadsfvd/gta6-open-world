@@ -19,6 +19,8 @@ export class PopulationManager {
     this.enabled = true;
     this.trafficTarget = POPULATION.traffic;
     this.walkerTarget = POPULATION.pedestrians;
+    // Gunfire empties the street around it.
+    game.events.on('gunfire', (e) => this.alarm(e.x, e.z, 45, e.shooter, 10));
   }
 
   focus() {
@@ -70,6 +72,19 @@ export class PopulationManager {
     for (let index = 0; index < this.trafficTarget * 2 && this.traffic.length < this.trafficTarget; index += 1) this.spawnTraffic(near, 15, POPULATION.spawnMax);
     for (let index = 0; index < this.walkerTarget * 2 && this.walkers.length < this.walkerTarget; index += 1) this.spawnWalker(near, 6, 120);
     this.fillParking(near);
+  }
+
+  /** Clears ambient traffic, walkers and parked cars, then fills in around the player again. */
+  reset() {
+    const game = this.game;
+    const hero = game.player.character;
+    for (const vehicle of this.traffic) if (vehicle.active && vehicle !== hero.vehicle) game.vehicles.remove(vehicle);
+    for (const walker of this.walkers) if (walker.active) game.characters.remove(walker);
+    for (const vehicle of this.parked.values()) if (vehicle.active && vehicle !== hero.vehicle && !vehicle.driver) game.vehicles.remove(vehicle);
+    this.traffic = [];
+    this.walkers = [];
+    this.parked.clear();
+    this.populateNow();
   }
 
   fillParking(near) {

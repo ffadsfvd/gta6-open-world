@@ -139,18 +139,21 @@ export class FollowCamera {
       const dirX = Math.sin(angle) * -1;
       const dirZ = Math.cos(angle) * -1;
       this.place(dirX, 0.16, dirZ);
+      // Keep the heading the minimap turns with in step with what this view shows.
+      this.yaw = Math.atan2(-dirX, -dirZ);
       return 58;
     }
     let heading = vehicle.yaw;
     if (speed > 4 && vehicle.forwardSpeed > 0) heading = Math.atan2(vehicle.vx, vehicle.vz);
-    if (this.lookBack) heading += Math.PI;
+    // Looking back shows the car's nose and whoever chases it, a little off-centre.
+    if (this.lookBack) heading += Math.PI + 0.42;
     if (this.freeLook <= 0 || this.lookBack) {
       this.yaw = this.lookBack ? heading : dampAngle(this.yaw, heading, 3.2, dt);
-      this.pitch = damp(this.pitch, view === 'far' ? 0.28 : 0.2, 2, dt);
+      this.pitch = damp(this.pitch, view === 'far' ? 0.28 : this.lookBack ? 0.25 : 0.2, 2, dt);
     }
     const fx = Math.sin(this.yaw);
     const fz = Math.cos(this.yaw);
-    const wanted = (view === 'far' ? length * 1.55 + 5 : length * 1.12 + 2.6) + Math.min(speed, 40) * 0.04;
+    const wanted = (view === 'far' ? length * 1.55 + 5 : length * 1.12 + 2.6) + Math.min(speed, 40) * 0.04 + (this.lookBack && view !== 'far' ? 2.4 : 0);
     const lead = Math.min(speed, 35) * 0.1;
     this.target.set(vehicle.x + Math.sin(vehicle.yaw) * lead * 0.3, vehicle.y + 1.25 + length * 0.08, vehicle.z + Math.cos(vehicle.yaw) * lead * 0.3);
     const cosPitch = Math.cos(this.pitch);

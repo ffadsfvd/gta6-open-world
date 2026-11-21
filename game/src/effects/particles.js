@@ -15,7 +15,7 @@ const KINDS = {
   splash: { additive: false, life: [0.6, 1.1], size: [0.35, 0.8], grow: 1.1, color: [0.88, 0.96, 1.0], end: [0.95, 0.98, 1.0], alpha: 0.75, gravity: 9, drag: 0.4 },
   spray: { additive: false, life: [0.9, 1.4], size: [0.12, 0.22], grow: 0.4, color: [0.8, 0.92, 1.0], end: [0.9, 0.96, 1.0], alpha: 0.6, gravity: 9.5, drag: 0.1 },
   muzzle: { additive: true, life: [0.04, 0.07], size: [0.45, 0.7], grow: 0, color: [1.9, 1.35, 0.55], end: [1.4, 0.6, 0.1], alpha: 1, gravity: 0, drag: 0 },
-  flash: { additive: true, life: [0.12, 0.18], size: [10, 14], grow: 4, color: [1.5, 0.9, 0.5], end: [0.6, 0.2, 0.05], alpha: 1, gravity: 0, drag: 0 },
+  flash: { additive: true, life: [0.12, 0.18], size: [6, 8], grow: 2.5, color: [1.3, 0.8, 0.45], end: [0.5, 0.2, 0.05], alpha: 0.9, gravity: 0, drag: 0 },
   sparkle: { additive: true, life: [0.5, 0.9], size: [0.2, 0.35], grow: -0.2, color: [0.5, 1.6, 0.6], end: [1.4, 1.4, 0.3], alpha: 1, gravity: -1.5, drag: 0.8 },
 };
 

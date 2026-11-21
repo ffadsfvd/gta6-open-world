@@ -14,6 +14,7 @@ void main() {
 const SKY_FRAGMENT = /* glsl */ `
 uniform vec3 uSunDir;
 uniform vec3 uZenith;
+uniform vec3 uMid;
 uniform vec3 uHorizon;
 uniform vec3 uBelow;
 uniform vec3 uSunColor;
@@ -47,7 +48,8 @@ void main() {
   float h = dir.y;
   float up = clamp(h, 0.0, 1.0);
   float toSun = max(dot(dir, uSunDir), 0.0);
-  vec3 sky = mix(uHorizon, uZenith, pow(up, 0.36));
+  vec3 sky = mix(uHorizon, uMid, smoothstep(0.0, 0.16, up));
+  sky = mix(sky, uZenith, smoothstep(0.12, 0.75, up));
   sky += uSunColor * pow(1.0 - up, 7.0) * (0.18 + 0.82 * pow(toSun, 2.5)) * 0.55;
   sky = mix(sky, uBelow, smoothstep(0.0, -0.06, h));
   sky += uSunColor * (smoothstep(0.99935, 0.99965, toSun) * 14.0 + pow(toSun, 90.0) * 1.4 + pow(toSun, 10.0) * 0.3);
@@ -66,10 +68,11 @@ void main() {
 }`;
 
 export const SKY_COLORS = {
-  zenith: '#2468d6',
-  horizon: '#ffd2a6',
+  zenith: '#1f5fd0',
+  mid: '#6fa3e8',
+  horizon: '#ffd7ae',
   below: '#f0bd8e',
-  fog: '#f4cfa6',
+  fog: '#f2d2b0',
 };
 
 function createSkyMaterial(sunDirection, clouds) {
@@ -82,6 +85,7 @@ function createSkyMaterial(sunDirection, clouds) {
     uniforms: {
       uSunDir: { value: sunDirection.clone() },
       uZenith: { value: new THREE.Color(SKY_COLORS.zenith) },
+      uMid: { value: new THREE.Color(SKY_COLORS.mid) },
       uHorizon: { value: new THREE.Color(SKY_COLORS.horizon) },
       uBelow: { value: new THREE.Color(SKY_COLORS.below) },
       uSunColor: { value: new THREE.Color(1.0, 0.72, 0.42) },

@@ -21,6 +21,7 @@ export class TrafficDriver {
     this.node = 0;
     this.lane = 0;
     this.speedLimit = Infinity;
+    this.preferStraight = false;
   }
 
   /** Puts the car on lane (from -> to) at fraction t, facing along the lane. */
@@ -55,10 +56,17 @@ export class TrafficDriver {
       return kind === 'straight' || (kind === 'right' && this.lane === 1) || (kind === 'left' && this.lane === 0);
     });
     const choices = allowed.length > 0 ? allowed : options.length > 0 ? options : node.neighbors;
-    const next = choices[Math.floor(this.rng.next() * choices.length)];
+    let next = choices[Math.floor(this.rng.next() * choices.length)];
+    if (this.preferStraight) {
+      const straight = options.find((id) => this.network.turnKind(this.prev, this.node, id) === 'straight');
+      if (straight !== undefined) next = straight;
+    }
     const kind = this.network.turnKind(this.prev, this.node, next);
     const laneOut = kind === 'right' ? 1 : kind === 'left' ? 0 : this.lane;
-    for (const point of this.network.turnPoints(this.prev, this.node, next, this.lane, laneOut)) this.waypoints.push(point);
+    for (const point of this.network.turnPoints(this.prev, this.node, next, this.lane, laneOut)) {
+      if (kind !== 'straight') point.turn = true;
+      this.waypoints.push(point);
+    }
     this.prev = this.node;
     this.node = next;
     this.lane = laneOut;
@@ -134,10 +142,17 @@ export class TrafficDriver {
 
     // Target speed: cruise, slow for turns, stop for lights and obstacles.
     const panicking = this.panic > 0;
-    let wanted = panicking ? 19 : this.cruise;
+    let wanted = panicking ? Math.max(19, this.cruise) : this.cruise;
     wanted = Math.min(wanted, this.speedLimit);
     const turnSharpness = Math.abs(controls.steer);
     wanted *= 1 - turnSharpness * 0.55;
+    // Brake ahead of corners: the closer the first turn point, the slower.
+    for (const point of this.waypoints) {
+      if (!point.turn) continue;
+      const toTurn = Math.hypot(point.x - vehicle.x, point.z - vehicle.z);
+      if (toTurn < 45) wanted = Math.min(wanted, (panicking ? 9 : 6.5) + toTurn * 0.32);
+      break;
+    }
     if (!panicking) {
       for (const point of this.waypoints) {
         if (!point.stop) continue;
