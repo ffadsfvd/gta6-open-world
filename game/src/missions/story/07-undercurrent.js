@@ -22,7 +22,7 @@ export default {
       ctx.vars.crew = ctx.runner.spawnCrew([
         { x: p.x + 4, z: p.z + 2, weapon: 'smg', health: 260, outfit: OUTFITS.crane, accuracy: 0.5 },
         { x: p.x - 6, z: p.z + 8, weapon: 'pistol' },
-        { x: p.x + 9, z: p.z + 12, weapon: 'pistol' },
+        { x: p.x + 9, z: p.z + 12, weapon: 'shotgun' },
         { x: p.x - 10, z: p.z - 4, weapon: 'smg', health: 90 },
         { x: p.x + 2, z: p.z + 16, weapon: 'pistol' },
         { x: p.x - 2, z: p.z - 10, weapon: 'fists', health: 100 },

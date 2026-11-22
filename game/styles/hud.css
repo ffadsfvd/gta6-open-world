@@ -239,6 +239,15 @@
   opacity: 1;
 }
 
+#clock {
+  margin-top: 2px;
+  font: 800 19px var(--hud-font);
+  letter-spacing: 1px;
+  text-align: right;
+  color: #fff4e3;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.85);
+}
+
 #zone-label b {
   display: block;
   font: italic 900 30px var(--display-font);
@@ -301,6 +310,25 @@
   height: 4px;
   border-radius: 50%;
   background: #ff5a5f;
+}
+
+/* A landed hit: the ring snaps tight and turns red; a kill draws a white X over it. */
+#crosshair.hit {
+  border-color: #ff3b3b;
+  transform: scale(0.8);
+  box-shadow: 0 0 8px rgba(255, 40, 40, 0.9);
+}
+
+#crosshair.kill::before {
+  content: '✕';
+  position: absolute;
+  left: -9px;
+  top: -12px;
+  width: 40px;
+  font: 900 30px/40px var(--hud-font);
+  text-align: center;
+  color: #ffffff;
+  text-shadow: 0 0 6px #ff2020;
 }
 
 #toast-stack {

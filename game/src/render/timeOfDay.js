@@ -10,9 +10,9 @@ const SUNSET = 19.6;
 const MOON_DIRECTION = new THREE.Vector3(0.55, 0.62, 0.56).normalize();
 
 const NIGHT = {
-  zenith: '#03060f', mid: '#091228', horizon: '#18234a', below: '#0a0f1e', fog: '#0f1730',
-  sun: '#8193d6', sunI: 0.5, sky: '#34477e', ground: '#1a1522', ambI: 0.55, glow: '#33457a',
-  night: 1, env: 0.16, clouds: 0.22, fogFar: 760, exposure: 1.12,
+  zenith: '#040917', mid: '#0c1733', horizon: '#1f2b58', below: '#0c1222', fog: '#141d3a',
+  sun: '#8d9fe0', sunI: 0.7, sky: '#4c62a6', ground: '#2a2232', ambI: 0.78, glow: '#33457a',
+  night: 1, env: 0.2, clouds: 0.22, fogFar: 760, exposure: 1.24,
 };
 
 /** Lighting through the day. `sunI` and `ambI` are light intensities; `glow` tints the sun halo. */

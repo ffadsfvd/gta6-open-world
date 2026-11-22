@@ -35,6 +35,6 @@ export default {
   onPass(game) {
     game.progress.unlock('smg');
     game.combat.arsenal.give('smg', 60);
-    game.notifications.toast('SMG unlocked: press 3', '', 5);
+    game.notifications.toast('SMG unlocked: press 4', '', 5);
   },
 };

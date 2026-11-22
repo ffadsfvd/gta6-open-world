@@ -3,10 +3,11 @@
 // renders and sets window.__shotReady. Scenes: cover (police chase), street (plaza shootout),
 // map (full-screen city map) and title (start screen).
 import { PLACES } from '../world/cityPlan.js';
-import { loseCops, eliminate, goTo } from '../missions/missionSteps.js';
+import { loseCops, eliminate, goTo, race } from '../missions/missionSteps.js';
 import { TrafficDriver } from '../ai/trafficDriver.js';
+import { RaceDriver } from '../ai/raceDriver.js';
 import { PedestrianBrain } from '../ai/pedestrianBrain.js';
-import { randomAppearance } from '../characters/appearance.js';
+import { OUTFITS, randomAppearance } from '../characters/appearance.js';
 
 function career(game, { money = 12850, story = 4 } = {}) {
   game.progress.money = money;
@@ -84,6 +85,8 @@ function coverScene(game) {
 function streetScene(game) {
   career(game, { money: 6420, story: 2 });
   startPlaying(game);
+  game.timeOfDay.set(17.85);
+  game.timeOfDay.frozen = true;
   const hero = game.player.character;
   hero.x = PLACES.plaza.x - 3;
   hero.z = PLACES.plaza.z - 27;
@@ -164,14 +167,61 @@ function mapScene(game) {
   game.openMap();
 }
 
+/** A night street race down Seabreeze Boulevard: neon hotels, lamps and the rivals' tail lights. */
+function raceScene(game) {
+  career(game, { money: 18250, story: 5 });
+  startPlaying(game);
+  game.timeOfDay.set(21.7);
+  game.timeOfDay.frozen = true;
+  const route = [{ x: 240, z: -160 }, { x: 240, z: -80 }, { x: 240, z: 0 }, { x: 240, z: 80 }, { x: 240, z: 160 }];
+  const car = game.vehicles.spawn('sports', 238.2, -252, 0, { role: 'player', paint: '#3a86ff' });
+  game.player.enterVehicle(car);
+  game.population.walkerTarget = 70;
+  game.population.reset();
+  for (const vehicle of [...game.population.traffic]) {
+    if (Math.abs(vehicle.x - 240) < 12 && Math.abs(vehicle.z + 200) < 90) game.vehicles.remove(vehicle);
+  }
+  game.population.traffic = game.population.traffic.filter((vehicle) => vehicle.active);
+  game.missions.start({
+    id: 'raceShot', title: 'Strand Sprint', story: false, reward: 0,
+    steps: () => [race(route, [
+      { type: 'muscle', paint: '#ff006e', skill: 0.9, outfit: OUTFITS.dash },
+      { type: 'sports', paint: '#ffd166', skill: 0.88, outfit: OUTFITS.gang },
+      { type: 'compact', paint: '#06d6a0', skill: 0.9, outfit: OUTFITS.gang },
+    ], 'Strand Sprint')],
+  });
+  game.hud.hideMissionTitle();
+  // Mid-race: the pack is ahead and Kai is closing in, everyone flat out.
+  const step = game.missions.current.step;
+  step.countdown = 0;
+  game.missions.freezePlayer(false);
+  step.racers.forEach((racer, index) => {
+    racer.x = 238.2 - ((index + 1) % 2) * 3.5;
+    racer.z = -240 + index * 7;
+    racer.yaw = 0;
+    racer.vz = 24;
+    racer.ai.started = true;
+  });
+  car.ai = new RaceDriver(car, route, 0.95);
+  car.ai.started = true;
+  car.vz = 25;
+  game.player.enabled = false;
+  for (let index = 0; index < 18; index += 1) game.population.spawnWalker({ x: 236, z: -190 }, 0, 45);
+  game.followCamera.view = 0;
+  game.followCamera.lookBack = false;
+  game.simulate(1.6);
+}
+
 /** The title screen over Carmine Strand and the Glasswater skyline. */
 function titleScene(game) {
+  game.timeOfDay.set(game.options.hour ?? 19.95);
+  game.timeOfDay.frozen = true;
   game.showTitle();
   game.simulate(2);
   game.titleCamera.time = 30;
 }
 
-export const SHOTS = { cover: coverScene, street: streetScene, map: mapScene, title: titleScene };
+export const SHOTS = { cover: coverScene, street: streetScene, race: raceScene, map: mapScene, title: titleScene };
 
 /** Lets the camera ease into its resting distance before the capture. */
 function settleCamera(game) {

@@ -10,6 +10,7 @@ import { PoliceHelicopter } from '../police/policeHelicopter.js';
 import { VehicleManager } from '../vehicles/vehicleManager.js';
 import { ActivityManager } from '../activities/activityManager.js';
 import { CombatSystem } from '../combat/combatSystem.js';
+import { WEAPONS } from '../combat/weapons.js';
 import { Hud } from '../ui/hud.js';
 import { AudioDirector } from '../audio/audioDirector.js';
 import { PopulationManager } from '../ai/populationManager.js';
@@ -331,7 +332,7 @@ export class Game {
   focus() {
     const hero = this.player.character;
     if (hero.vehicle) return { mode: 'vehicle', vehicle: hero.vehicle };
-    return { mode: 'foot', x: hero.x, y: hero.y, z: hero.z, aiming: this.player.aiming && hero.aimYaw !== null, swimming: hero.swimming };
+    return { mode: 'foot', x: hero.x, y: hero.y, z: hero.z, aiming: this.player.aiming && hero.aimYaw !== null, swimming: hero.swimming, zoom: WEAPONS[hero.weapon]?.zoom };
   }
 
   drawSignals() {
@@ -383,7 +384,7 @@ export class Game {
     this.glow.end();
     this.pools.end();
     const markers = this.state === 'playing' ? [...this.missions.markers(), ...this.activities.worldMarkers()] : [];
-    this.markers.draw(markers, this.time);
+    this.markers.draw(markers, this.time, night);
     if (this.state === 'playing' || this.state === 'paused') this.hud.update(dt);
     if (this.state === 'map') this.fullMap.draw();
     this.screenEffects.update(dt, this.player.character);

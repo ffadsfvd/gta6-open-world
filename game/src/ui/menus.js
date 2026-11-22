@@ -7,8 +7,8 @@ import { formatMoney } from '../core/mathUtils.js';
 
 const CONTROLS = [
   ['W A S D / arrows', 'Move / drive'], ['Mouse', 'Look around (click to capture)'], ['Shift', 'Sprint'],
-  ['Space', 'Jump / handbrake'], ['F', 'Enter, exit or steal a vehicle'], ['Right mouse', 'Aim'],
-  ['Left mouse', 'Shoot / punch'], ['Q · 1 2 3 · wheel', 'Switch weapon'], ['R', 'Reload'],
+  ['Space', 'Jump / handbrake'], ['X', 'Dive roll (dodges bullets)'], ['F', 'Enter, exit or steal a vehicle'], ['Right mouse', 'Aim'],
+  ['Left mouse', 'Shoot / punch'], ['Q · 1-5 · wheel', 'Switch weapon'], ['R', 'Reload'],
   ['E', 'Talk, start missions, shop'], ['H', 'Horn'], ['V', 'Car camera view'], ['C', 'Look behind'],
   ['N', 'Change radio station'], ['T', 'Taxi fares (in a taxi)'], ['M', 'City map'], ['Esc / P', 'Pause'],
 ];

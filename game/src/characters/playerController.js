@@ -8,6 +8,8 @@ import { nearestCorner } from '../ai/sidewalkPaths.js';
 import { groundHeight } from '../world/terrain.js';
 
 const ENTER_RANGE = 4.5;
+const DODGE_TIME = 0.55;
+const DODGE_SPEED = 8.5;
 
 export class PlayerController {
   constructor(game, character) {
@@ -25,6 +27,7 @@ export class PlayerController {
     const input = game.input;
     const camera = game.followCamera;
     const mouse = input.takeMouse();
+    this.dodgeCooldown = Math.max(0, (this.dodgeCooldown ?? 0) - dt);
     if (!this.enabled) return;
     camera.look(mouse.x, mouse.y, this.sensitivity, this.invertY);
     if (this.character.vehicle) this.updateDriving(dt);
@@ -50,6 +53,10 @@ export class PlayerController {
     const armed = character.weapon !== 'fists';
     const aiming = input.isDown('aim') && armed;
     this.aiming = aiming;
+    if (this.dodge || (input.wasPressed('dodge') && character.onGround && !character.swimming && !(this.dodgeCooldown > 0))) {
+      this.updateDodge(dt, dx, dz, -fz, fx);
+      return;
+    }
     let speed = input.isDown('sprint') ? PLAYER_TUNING.sprintSpeed : PLAYER_TUNING.runSpeed;
     if (aiming) speed = PLAYER_TUNING.walkSpeed;
     character.setMove(dx, dz, speed);
@@ -60,6 +67,36 @@ export class PlayerController {
       character.onGround = false;
     }
     if (input.wasPressed('enterVehicle')) this.tryEnterVehicle();
+  }
+
+  /**
+   * A dive roll (X): a quick burst the way Kai is moving (to the right if he stands still),
+   * during which bullets and fists miss him. Then a short recovery before the next one.
+   */
+  updateDodge(dt, dx, dz, rightX, rightZ) {
+    const character = this.character;
+    if (!this.dodge) {
+      if (this.dodgeCooldown > 0) return;
+      const length = Math.hypot(dx, dz);
+      const x = length > 0.1 ? dx / length : rightX;
+      const z = length > 0.1 ? dz / length : rightZ;
+      this.dodge = { time: DODGE_TIME, x, z };
+      character.yaw = Math.atan2(x, z);
+      character.aimYaw = null;
+      this.game.events.emit('dodge', { character });
+    }
+    const dodge = this.dodge;
+    dodge.time -= dt;
+    character.dodging = Math.max(0, dodge.time);
+    const speed = DODGE_SPEED * (0.55 + 0.45 * (dodge.time / DODGE_TIME));
+    character.setMove(dodge.x, dodge.z, speed);
+    character.vx = dodge.x * speed;
+    character.vz = dodge.z * speed;
+    if (dodge.time <= 0) {
+      this.dodge = null;
+      character.dodging = 0;
+      this.dodgeCooldown = 0.35;
+    }
   }
 
   tryEnterVehicle() {
@@ -165,6 +202,8 @@ export class PlayerController {
     character.brain = null;
     character.punchTimer = 0;
     character.recoil = 0;
+    character.dodging = 0;
+    this.dodge = null;
     character.anim.down = 0;
     character.anim.airborne = 0;
     character.setMove(0, 0, 0);

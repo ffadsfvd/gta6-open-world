@@ -4,16 +4,19 @@
 export const WEAPONS = {
   fists: { name: 'Fists', icon: 'FIST', damage: 13, range: 1.7, rate: 2.6, melee: true },
   pistol: { name: 'Pistol', icon: 'PISTOL', damage: 28, range: 75, rate: 3.4, magazine: 12, spread: 0.012, reload: 1.25, price: 600, ammoPrice: 80, ammoPack: 36 },
+  shotgun: { name: 'Shotgun', icon: 'SHOTGUN', damage: 15, pellets: 8, range: 34, rate: 1.15, magazine: 6, spread: 0.06, reload: 2.1, price: 1600, ammoPrice: 120, ammoPack: 24, kick: 2.4 },
   smg: { name: 'SMG', icon: 'SMG', damage: 16, range: 60, rate: 11, magazine: 30, spread: 0.034, reload: 1.7, price: 2800, ammoPrice: 150, ammoPack: 90, auto: true },
+  rifle: { name: 'Marksman Rifle', icon: 'RIFLE', damage: 62, range: 160, rate: 1.6, magazine: 8, spread: 0.003, reload: 2.3, price: 4500, ammoPrice: 220, ammoPack: 32, zoom: 30, kick: 1.6 },
 };
 
-export const WEAPON_ORDER = ['fists', 'pistol', 'smg'];
+export const WEAPON_ORDER = ['fists', 'pistol', 'shotgun', 'smg', 'rifle'];
+const EMPTY_AMMO = () => ({ pistol: { mag: 0, reserve: 0 }, shotgun: { mag: 0, reserve: 0 }, smg: { mag: 0, reserve: 0 }, rifle: { mag: 0, reserve: 0 } });
 
 export class Arsenal {
   constructor() {
     this.current = 'fists';
-    this.owned = { fists: true, pistol: false, smg: false };
-    this.ammo = { pistol: { mag: 0, reserve: 0 }, smg: { mag: 0, reserve: 0 } };
+    this.owned = { fists: true, pistol: false, shotgun: false, smg: false, rifle: false };
+    this.ammo = EMPTY_AMMO();
     this.reloading = 0;
     this.cooldown = 0;
   }
@@ -108,8 +111,8 @@ export class Arsenal {
 
   load(data) {
     if (!data) return;
-    this.owned = { fists: true, ...data.owned };
-    this.ammo = { pistol: { mag: 0, reserve: 0 }, smg: { mag: 0, reserve: 0 }, ...data.ammo };
+    this.owned = { fists: true, pistol: false, shotgun: false, smg: false, rifle: false, ...data.owned };
+    this.ammo = { ...EMPTY_AMMO(), ...data.ammo };
     this.current = this.owned[data.current] ? data.current : 'fists';
   }
 }

@@ -108,6 +108,38 @@ const TESTS = {
     await p.screenshot('tmp/tests/onfoot-wall.jpg');
   },
 
+  async dodgeAndFists(t) {
+    const p = t.player;
+    await startNewGame(p);
+    await p.hold('KeyW', 600);
+    let from = await snapshot(p);
+    // X while running: a dive roll that carries Kai forward fast and makes him untouchable.
+    await p.down('KeyW');
+    await p.tap('KeyX');
+    await sleep(150);
+    const rolling = await p.read('__game.player.character.dodging');
+    await sleep(500);
+    await p.up('KeyW');
+    let s = await snapshot(p);
+    t.check('X dives into a roll', rolling > 0, rolling);
+    t.check('the roll carries Kai forward', moved(s, from) > 3, moved(s, from).toFixed(1));
+    await sleep(600);
+    from = await snapshot(p);
+    await p.hold('KeyD', 800);
+    s = await snapshot(p);
+    t.check('he walks normally after the roll', moved(s, from) > 2.5 && s.heroState !== 'down', `${moved(s, from).toFixed(1)} ${s.heroState}`);
+    // Standing still, X rolls to the side.
+    await sleep(400);
+    from = await snapshot(p);
+    await p.tap('KeyX');
+    await sleep(700);
+    s = await snapshot(p);
+    t.check('a roll from standing goes sideways', moved(s, from) > 2.5, moved(s, from).toFixed(1));
+    t.check('number keys keep fists when no gun is owned', (await p.read('__game.combat.arsenal.current')) === 'fists');
+    await p.tap('Digit3');
+    t.check('an unowned shotgun cannot be drawn', (await p.read('__game.combat.arsenal.current')) === 'fists');
+  },
+
   async drive(t) {
     const p = t.player;
     await startNewGame(p);
@@ -234,7 +266,12 @@ const TESTS = {
     for (let i = 0; i < 8; i += 1) {
       await sleep(750);
       s = await snapshot(p);
-      if (s.car.ai) break;
+      // Enough to prove it drives; any further and a cruiser on the seafront ends up in the sea.
+      if (!s.car || s.car.ai || moved(s, from) > 30) break;
+    }
+    if (!s.car) {
+      t.check('still at the wheel of the cruiser', false, `${s.fate} ${s.heroState} wanted ${s.wanted}`);
+      return;
     }
     t.check('no police AI takes over the stolen cruiser', s.car.ai === null, s.car.ai);
     t.check('the cruiser answers W', s.car.controls.throttle === 1 && moved(s, from) > 20, moved(s, from).toFixed(1));
@@ -247,6 +284,11 @@ const TESTS = {
     await sleep(700);
     const turned = await snapshot(p);
     await p.up('KeyA', 'KeyW');
+    if (!s.car || !turned.car) {
+      await p.screenshot('tmp/tests/policecar-lost.jpg');
+      t.check('still at the wheel while turning', false, `${turned.fate} ${turned.heroState} wanted ${turned.wanted} at ${turned.x.toFixed(0)},${turned.z.toFixed(0)}`);
+      return;
+    }
     t.check('and steers', Math.abs(wrap(turned.car.yaw - s.car.yaw)) > 0.15, `${wrap(turned.car.yaw - s.car.yaw).toFixed(2)} at ${s.car.speed.toFixed(1)} m/s, ${s.x.toFixed(0)},${s.z.toFixed(0)}`);
     await p.screenshot('tmp/tests/policecar.jpg');
   },
@@ -261,16 +303,17 @@ const TESTS = {
     let s = await snapshot(p);
     const wall = { x: s.x - 40, z: s.z };
     const started = Date.now();
-    while (Date.now() - started < 90000) {
+    while (Date.now() - started < 150000) {
       s = await snapshot(p);
       if (s.fate || !s.alive) break;
       if (!s.inCar) {
         await stealCar(p);
         continue;
       }
+      // Hard hits from a long run-up; never sit still against the wall long enough to be cuffed.
       await driveTo(p, wall, { radius: 1, timeoutMs: 3500, cruise: 40 });
-      await p.hold('KeyW', 800);
-      await p.hold('KeyS', 1700);
+      await p.hold('KeyW', 400);
+      await p.hold('KeyS', 2600);
     }
     await p.releaseAll();
     s = await snapshot(p);

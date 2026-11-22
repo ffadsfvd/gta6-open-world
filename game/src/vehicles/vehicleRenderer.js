@@ -96,7 +96,7 @@ export class VehicleRenderer {
         if (pools && night > 0.15) {
           // One soft beam on the road ahead of the car.
           const reach = vehicle.halfLength + 7.5;
-          const beam = night * 0.55;
+          const beam = night * 0.34;
           pools.add(vehicle.x + Math.sin(vehicle.yaw) * reach, vehicle.y + 0.04, vehicle.z + Math.cos(vehicle.yaw) * reach, 7, 15, vehicle.yaw, beam, beam * 0.9, beam * 0.7);
         }
         const brake = vehicle.brakeLight ? 1 : 0.35;

@@ -9,9 +9,12 @@ export class SoundEffects {
   gunshot(weapon, volume = 1, pan = 0) {
     const e = this.engine;
     const smg = weapon === 'smg';
-    e.burst({ duration: smg ? 0.09 : 0.16, gain: 0.55 * volume, filter: 'highpass', frequency: 500, pan });
-    e.burst({ duration: smg ? 0.12 : 0.22, gain: 0.35 * volume, filter: 'lowpass', frequency: 2400, endFrequency: 300, pan });
-    e.tone({ type: 'sine', frequency: smg ? 160 : 130, endFrequency: 45, duration: 0.12, gain: 0.45 * volume, pan });
+    // The long guns boom: a longer, lower blast with more body.
+    const heavy = weapon === 'shotgun' || weapon === 'rifle';
+    const length = smg ? 0.09 : heavy ? 0.26 : 0.16;
+    e.burst({ duration: length, gain: (heavy ? 0.7 : 0.55) * volume, filter: 'highpass', frequency: heavy ? 320 : 500, pan });
+    e.burst({ duration: length * 1.4, gain: (heavy ? 0.5 : 0.35) * volume, filter: 'lowpass', frequency: heavy ? 1800 : 2400, endFrequency: heavy ? 180 : 300, pan });
+    e.tone({ type: 'sine', frequency: smg ? 160 : heavy ? 95 : 130, endFrequency: heavy ? 32 : 45, duration: heavy ? 0.2 : 0.12, gain: (heavy ? 0.6 : 0.45) * volume, pan });
   }
 
   punch(volume = 1) {

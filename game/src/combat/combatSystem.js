@@ -18,8 +18,8 @@ export class CombatSystem {
       const v = e.vehicle;
       const driver = v.driver;
       if (driver) {
-        // Whoever is inside a car that blows up is thrown out, badly hurt (Kai survives it from
-        // good health: the fire gave him seconds to bail out).
+        // Whoever is inside a car that blows up is thrown out. Kai had seconds of warning from the
+        // fire to bail out; staying in costs him everything but his armour.
         if (driver.kind === 'player') game.player.exitVehicle();
         else {
           driver.vehicle = null;
@@ -29,7 +29,7 @@ export class CombatSystem {
           driver.x = side.x;
           driver.z = side.z;
         }
-        const killed = driver.takeDamage(driver.kind === 'player' ? 60 : 200, v.lastImpactBy);
+        const killed = driver.takeDamage(driver.kind === 'player' ? 110 : 200, v.lastImpactBy);
         driver.knockDown(-Math.cos(v.yaw) * 5, Math.sin(v.yaw) * 5, 3, 5);
         if (killed) game.events.emit('characterKilled', { victim: driver, attacker: v.lastImpactBy, weapon: 'explosion' });
       }
@@ -54,7 +54,9 @@ export class CombatSystem {
     if (input.wheel < 0) arsenal.cycle(-1);
     if (input.wasPressed('weapon1')) arsenal.select('fists');
     if (input.wasPressed('weapon2')) arsenal.select('pistol');
-    if (input.wasPressed('weapon3')) arsenal.select('smg');
+    if (input.wasPressed('weapon3')) arsenal.select('shotgun');
+    if (input.wasPressed('weapon4')) arsenal.select('smg');
+    if (input.wasPressed('weapon5')) arsenal.select('rifle');
     if (input.wasPressed('reload')) arsenal.reload();
     const spec = arsenal.spec;
     const wantsFire = spec.auto ? input.isDown('fire') : input.wasPressed('fire');
@@ -84,26 +86,33 @@ export class CombatSystem {
     const game = this.game;
     const hero = game.player.character;
     const camera = game.camera;
-    const dir = camera.getWorldDirection(this.tmp ?? (this.tmp = camera.position.clone()));
-    if (hero.aimYaw !== null) this.assistAim(camera.position, dir, spec.range);
+    const aim = camera.getWorldDirection(this.tmp ?? (this.tmp = camera.position.clone()));
+    if (hero.aimYaw !== null) this.assistAim(camera.position, aim, spec.range);
     const spread = spec.spread * (hero.aimYaw !== null ? 1 : 2.2) * (Math.hypot(hero.vx, hero.vz) > 1 ? 1.6 : 1);
-    dir.x += (this.rng.next() - 0.5) * 2 * spread;
-    dir.y += (this.rng.next() - 0.5) * 2 * spread;
-    dir.z += (this.rng.next() - 0.5) * 2 * spread;
-    dir.normalize();
-    // Start the ray level with the player, not at the camera, so nothing behind them is hit.
-    const toHero = (hero.x - camera.position.x) * dir.x + (hero.z - camera.position.z) * dir.z;
-    const start = Math.max(0, toHero);
-    const ox = camera.position.x + dir.x * start;
-    const oy = camera.position.y + dir.y * start;
-    const oz = camera.position.z + dir.z * start;
-    const hit = castBullet(game, ox, oy, oz, dir.x, dir.y, dir.z, spec.range, hero);
-    const muzzle = this.muzzleOf(hero, Math.atan2(dir.x, dir.z));
+    const pellets = spec.pellets ?? 1;
+    const dir = this.pelletDir ?? (this.pelletDir = aim.clone());
     hero.recoil = 1;
     this.fireHold = 0.6;
     hero.aimYaw = game.followCamera.yaw;
     this.lastPlayerAttack = game.time;
-    this.resolveShot(hero, hit, spec.damage, dir, muzzle);
+    if (spec.kick) game.followCamera.trauma = Math.min(1, game.followCamera.trauma + spec.kick * 0.12);
+    // A shotgun fires a spray of pellets: one bang, one muzzle flash, many tracers.
+    for (let pellet = 0; pellet < pellets; pellet += 1) {
+      dir.copy(aim);
+      dir.x += (this.rng.next() - 0.5) * 2 * spread;
+      dir.y += (this.rng.next() - 0.5) * 2 * spread;
+      dir.z += (this.rng.next() - 0.5) * 2 * spread;
+      dir.normalize();
+      // Start the ray level with the player, not at the camera, so nothing behind them is hit.
+      const toHero = (hero.x - camera.position.x) * dir.x + (hero.z - camera.position.z) * dir.z;
+      const start = Math.max(0, toHero);
+      const ox = camera.position.x + dir.x * start;
+      const oy = camera.position.y + dir.y * start;
+      const oz = camera.position.z + dir.z * start;
+      const hit = castBullet(game, ox, oy, oz, dir.x, dir.y, dir.z, spec.range, hero);
+      const muzzle = this.muzzleOf(hero, Math.atan2(dir.x, dir.z));
+      this.resolveShot(hero, hit, spec.damage, { x: dir.x, y: dir.y, z: dir.z }, muzzle, pellet > 0);
+    }
   }
 
   muzzleOf(character, yaw) {
@@ -174,11 +183,13 @@ export class CombatSystem {
     this.resolveShot(shooter, hit, spec.damage * share, { x: dx, y: dy, z: dz }, this.muzzleOf(shooter, shooter.aimYaw));
   }
 
-  resolveShot(shooter, hit, damage, dir, muzzle) {
+  resolveShot(shooter, hit, damage, dir, muzzle, quiet = false) {
     const game = this.game;
     game.effects.tracers.add(muzzle.x, muzzle.y, muzzle.z, hit.x, hit.y, hit.z);
-    game.effects.particles.burst('muzzle', 1, muzzle.x, muzzle.y, muzzle.z);
-    game.events.emit('gunfire', { shooter, x: shooter.x, z: shooter.z, weapon: shooter.weapon });
+    if (!quiet) {
+      game.effects.particles.burst('muzzle', 1, muzzle.x, muzzle.y, muzzle.z);
+      game.events.emit('gunfire', { shooter, x: shooter.x, z: shooter.z, weapon: shooter.weapon });
+    }
     if (hit.kind === 'none') return;
     game.events.emit('bulletImpact', { kind: hit.kind, x: hit.x, y: hit.y, z: hit.z, dx: dir.x, dz: dir.z });
     if (hit.kind === 'character') this.hurt(hit.character, damage * (hit.head ? 2.4 : 1), shooter, 'gun', dir);
@@ -191,6 +202,8 @@ export class CombatSystem {
 
   hurt(victim, amount, attacker, kind, dir = null) {
     const game = this.game;
+    // Mid-roll, bullets and fists whistle past.
+    if (victim.dodging > 0.08 && (kind === 'gun' || kind === 'melee')) return false;
     const killed = victim.takeDamage(amount, attacker);
     if (dir && !killed && amount > 20 && victim.kind !== 'player') {
       victim.vx += dir.x * 1.5;

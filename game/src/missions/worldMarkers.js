@@ -13,12 +13,13 @@ void main() {
 
 const COLUMN_FRAGMENT = /* glsl */ `
 uniform float uTime;
+uniform float uStrength;
 varying float vHeight;
 varying vec3 vTint;
 void main() {
   float fade = pow(1.0 - clamp(vHeight, 0.0, 1.0), 1.6);
   float bands = 0.75 + 0.25 * sin(vHeight * 18.0 - uTime * 4.0);
-  gl_FragColor = vec4(vTint * fade * bands, 1.0);
+  gl_FragColor = vec4(vTint * fade * bands * uStrength, 1.0);
 }`;
 
 const CAPACITY = 48;
@@ -29,7 +30,7 @@ export class WorldMarkers {
     this.columnMaterial = new THREE.ShaderMaterial({
       vertexShader: COLUMN_VERTEX,
       fragmentShader: COLUMN_FRAGMENT,
-      uniforms: { uTime: { value: 0 } },
+      uniforms: { uTime: { value: 0 }, uStrength: { value: 1 } },
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -70,9 +71,11 @@ export class WorldMarkers {
   }
 
   /** Redraws all markers from a list of { x, y, z, type, color, radius }. */
-  draw(markers, time) {
+  draw(markers, time, night = 0) {
     for (const mesh of [this.columns, this.rings, this.arrows, this.pickups]) mesh.count = 0;
     this.columnMaterial.uniforms.uTime.value = time;
+    // Light columns would blind the night: they dim as the sky darkens.
+    this.columnMaterial.uniforms.uStrength.value = 1 - night * 0.6;
     for (const marker of markers) {
       const y = marker.y ?? 0.2;
       const radius = marker.radius ?? 2;

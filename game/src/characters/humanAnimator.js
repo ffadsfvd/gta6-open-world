@@ -73,6 +73,12 @@ export function poseCharacter(character, pose, vehicleMatrix = null) {
     // Everyone has a build of their own: taller, shorter, broader or slighter.
     const build = character.appearance.build;
     root.compose(position, quaternion, build ? bodyScale.set(build.width, build.height, 0.5 + build.width * 0.5) : ONE);
+    if (character.dodging > 0) {
+      // A dive roll: tuck, turn head over heels around the hips, come up running.
+      const t = 1 - character.dodging / 0.55;
+      compose(root, root, 0, 0.55 - Math.sin(t * Math.PI) * 0.3, 0, Math.min(1, t * 1.15) * Math.PI * 2);
+      compose(root, root, 0, -0.55, 0, 0);
+    }
     legL = swing * 0.75;
     legR = -swing * 0.75;
     // Arms swing against the leg on their own side.
@@ -94,11 +100,17 @@ export function poseCharacter(character, pose, vehicleMatrix = null) {
       rollL = 0.3;
       rollR = 0.3;
     }
+    if (character.dodging > 0) {
+      legL = 1.5;
+      legR = 1.3;
+      armL = -1.2;
+      armR = -1.2;
+    }
     if (anim.aim > 0.01) {
       const aimArm = -Math.PI / 2 - character.aimPitch - character.recoil * 0.25;
       armR = armR * (1 - anim.aim) + aimArm * anim.aim;
       rollR = rollR * (1 - anim.aim) - 0.12 * anim.aim;
-      if (character.weapon === 'smg') {
+      if (character.weapon === 'smg' || character.weapon === 'shotgun' || character.weapon === 'rifle') {
         armL = armL * (1 - anim.aim) + (aimArm + 0.35) * anim.aim;
         rollL = rollL * (1 - anim.aim) - 0.55 * anim.aim;
       }

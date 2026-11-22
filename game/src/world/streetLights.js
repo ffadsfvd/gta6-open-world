@@ -24,7 +24,7 @@ export class StreetLights {
       const hx = lamp.x + Math.sin(lamp.yaw) * HEAD_REACH;
       const hz = lamp.z + Math.cos(lamp.yaw) * HEAD_REACH;
       glow.add(hx, lamp.y + HEAD_HEIGHT, hz, 1.9, 1.5 * strength, 1.05 * strength, 0.55 * strength);
-      pools.add(hx, lamp.y + 0.03, hz, 15, 15, 0, 0.5 * strength, 0.33 * strength, 0.15 * strength);
+      pools.add(hx, lamp.y + 0.03, hz, 15, 15, 0, 0.4 * strength, 0.27 * strength, 0.13 * strength);
     }
   }
 }

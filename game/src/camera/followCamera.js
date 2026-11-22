@@ -121,7 +121,7 @@ export class FollowCamera {
     this.target.z += fz * 2;
     this.target.y += 0.1 - this.pitch * 0.4;
     this.lastMode = 'foot';
-    return aiming ? 50 : CAMERA_TUNING.fov;
+    return aiming ? focus.zoom ?? 50 : CAMERA_TUNING.fov;
   }
 
   updateVehicle(dt, focus) {

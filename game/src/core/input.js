@@ -23,6 +23,7 @@ export const ACTIONS = {
   weapon3: ['Digit3'],
   weapon4: ['Digit4'],
   weapon5: ['Digit5'],
+  dodge: ['KeyX'],
   taxi: ['KeyT'],
   radio: ['KeyN'],
   map: ['KeyM'],

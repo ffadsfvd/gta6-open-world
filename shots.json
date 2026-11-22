@@ -1,6 +1,6 @@
 [
   { "name": "1-cover.jpg", "query": "?shot=cover&seed=20261124" },
   { "name": "2-street.jpg", "query": "?shot=street&seed=20261124" },
-  { "name": "3-map.jpg", "query": "?shot=map&seed=20261124" },
+  { "name": "3-race.jpg", "query": "?shot=race&seed=20261124" },
   { "name": "4-title.jpg", "query": "?shot=title&seed=20261124" }
 ]

@@ -44,6 +44,7 @@ export class SaveGame {
       progress: game.progress.toJSON(),
       arsenal: game.combat.arsenal.toJSON(),
       hero: { health: hero.health, armour: hero.armour, x: hero.vehicle ? hero.vehicle.x : hero.x, z: hero.vehicle ? hero.vehicle.z : hero.z },
+      hour: game.timeOfDay.hour,
     };
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -70,6 +71,8 @@ export class SaveGame {
     // A new day: Kai wakes up at the safehouse fully rested.
     hero.health = hero.maxHealth;
     hero.armour = data.hero.armour ?? 0;
+    // The clock carries on from the hour of the save.
+    if (Number.isFinite(data.hour)) game.timeOfDay.set(data.hour);
     game.player.placeAt(findStandingSpot(game.collision, PLACES.safehouse));
     return true;
   }
