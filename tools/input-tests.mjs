@@ -108,6 +108,34 @@ const TESTS = {
     await p.screenshot('tmp/tests/onfoot-wall.jpg');
   },
 
+  async shop(t) {
+    const p = t.player;
+    await startNewGame(p);
+    t.check('got a car to drive to Bayside Arms', Boolean(await stealCar(p)));
+    const shop = { x: 40, z: 89 };
+    const drove = await driveRoute(p, shop, { radius: 10, timeoutMs: 90000, cruise: 18 });
+    t.check('drove to the gun shop', drove.arrived, drove.reason);
+    await p.tap('KeyF');
+    await sleep(900);
+    await walkTo(p, shop, { radius: 1.2, timeoutMs: 15000 });
+    await sleep(300);
+    let s = await snapshot(p);
+    t.check('the shop offers itself', /shop/i.test(s.help), s.help);
+    await p.tap('KeyE');
+    await sleep(500);
+    const items = await p.read("document.querySelectorAll('#shop-panel .menu-button').length");
+    t.check('E opens Bayside Arms with every gun, ammo, armour and first aid', items === 10, items);
+    t.check('the shotgun and rifle are on sale', await p.read("/Shotgun/.test(document.getElementById('shop-panel').textContent) && /Marksman Rifle/.test(document.getElementById('shop-panel').textContent)"));
+    await p.tap('KeyE');
+    await sleep(400);
+    t.check('E leaves the shop', await p.read("document.getElementById('shop-panel').classList.contains('hidden')"));
+    if (!(await p.read('Boolean(document.pointerLockElement)'))) await p.click();
+    const from = await snapshot(p);
+    await p.hold('KeyS', 1500);
+    s = await snapshot(p);
+    t.check('and Kai walks away', moved(s, from) > 3, moved(s, from).toFixed(1));
+  },
+
   async dodgeAndFists(t) {
     const p = t.player;
     await startNewGame(p);
