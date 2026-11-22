@@ -1,5 +1,6 @@
-// Draws every person with nine instanced meshes (legs, pelvis, torso, head, hair, hat, arms,
-// sleeves, guns): skin, hair, shirt and trouser colours per instance, posed by the animator.
+// Draws every person with instanced meshes per body part (legs bare or in trousers, shorts,
+// skirt, pelvis, torso, head, two hair styles, cap, arms, short or long sleeves, guns): skin,
+// hair, shirt and trouser colours per instance, posed by the animator.
 import * as THREE from 'three';
 import { createHumanParts } from './humanModel.js';
 import { poseCharacter } from './humanAnimator.js';
@@ -26,14 +27,20 @@ export class HumanRenderer {
     };
     this.meshes = {
       leg: make(parts.leg, CAPACITY * 2),
+      bareLeg: make(parts.bareLeg, CAPACITY),
+      shorts: make(parts.shorts, CAPACITY),
+      skirt: make(parts.skirt, CAPACITY / 2),
       pelvis: make(parts.pelvis, CAPACITY),
       torso: make(parts.torso, CAPACITY),
       head: make(parts.head, CAPACITY),
       hair: make(parts.hair, CAPACITY),
+      longHair: make(parts.longHair, CAPACITY / 2),
       hat: make(parts.hat, CAPACITY),
       arm: make(parts.arm, CAPACITY * 2),
       sleeve: make(parts.sleeve, CAPACITY * 2),
+      longSleeve: make(parts.longSleeve, CAPACITY),
       gun: make(parts.gun, CAPACITY, gunMaterial),
+      longGun: make(parts.longGun, CAPACITY / 2, gunMaterial),
     };
     this.pose = {
       pelvis: new THREE.Matrix4(), legL: new THREE.Matrix4(), legR: new THREE.Matrix4(),
@@ -72,19 +79,32 @@ export class HumanRenderer {
       const pose = this.pose;
       const shirt = character.hitFlash > 0 ? tempColor.set(look.shirt).lerp(flashColor, character.hitFlash * 2) : tempColor.set(look.shirt);
       this.push('torso', pose.torso, shirt);
-      this.push('sleeve', pose.armL, shirt);
-      this.push('sleeve', pose.armR, shirt);
+      const sleeve = look.sleeves === 'long' ? 'longSleeve' : 'sleeve';
+      this.push(sleeve, pose.armL, shirt);
+      this.push(sleeve, pose.armR, shirt);
       tempColor.set(look.pants);
       this.push('pelvis', pose.pelvis, tempColor);
-      this.push('leg', pose.legL, tempColor);
-      this.push('leg', pose.legR, tempColor);
+      if (look.legs === 'skirt') this.push('skirt', pose.pelvis, tempColor);
+      if (look.legs === 'shorts') {
+        this.push('shorts', pose.legL, tempColor);
+        this.push('shorts', pose.legR, tempColor);
+      }
+      if (look.legs === 'shorts' || look.legs === 'skirt') {
+        tempColor.set(look.skin);
+        this.push('bareLeg', pose.legL, tempColor);
+        this.push('bareLeg', pose.legR, tempColor);
+      } else {
+        this.push('leg', pose.legL, tempColor);
+        this.push('leg', pose.legR, tempColor);
+      }
       tempColor.set(look.skin);
       this.push('head', pose.head, tempColor);
       this.push('arm', pose.armL, tempColor);
       this.push('arm', pose.armR, tempColor);
       if (look.hat) this.push('hat', pose.head, tempColor.set(look.hat));
-      if (!look.bald) this.push('hair', pose.head, tempColor.set(look.hair));
+      if (!look.bald) this.push(look.hairStyle === 'long' ? 'longHair' : 'hair', pose.head, tempColor.set(look.hair));
       if (character.weapon === 'pistol' || character.weapon === 'smg') this.push('gun', pose.armR, tempColor.set('#ffffff'));
+      else if (character.weapon === 'shotgun' || character.weapon === 'rifle') this.push('longGun', pose.armR, tempColor.set('#ffffff'));
     }
     for (const [name, mesh] of Object.entries(this.meshes)) {
       mesh.count = this.counts[name];

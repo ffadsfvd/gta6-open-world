@@ -14,6 +14,7 @@ import { buildBackdrop } from './backdrop.js';
 import { Vegetation } from './vegetation.js';
 import { BreakableProps } from './breakableProps.js';
 import { TrafficSignals } from './trafficSignals.js';
+import { Boats } from './boats.js';
 import { groundHeight } from './terrain.js';
 
 const GROUND_SCALE = { paving: 6, grass: 6, plaza: 4, concrete: 6 };
@@ -58,6 +59,7 @@ export function buildCity({ scene, textures, materials, atlas, collision, events
   for (const tree of extras.trees) vegetation.addTree(tree.kind, tree.x, tree.z, treeRng.range(0, Math.PI * 2), 1);
   vegetation.build(group, materials, collision, groundHeight);
   props.build(group, materials, collision);
+  const boats = new Boats(group, rng.fork(903));
 
   return {
     group,
@@ -70,6 +72,7 @@ export function buildCity({ scene, textures, materials, atlas, collision, events
       signals.update(dt);
       props.update(dt);
       shore.update(dt, time);
+      boats.update(time);
     },
   };
 }

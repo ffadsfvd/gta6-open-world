@@ -31,16 +31,23 @@ export function talk(lines, { freeze = true } = {}) {
   };
 }
 
-/** Reach a place. vehicle: 'any' (be driving), 'foot', a vars name, or null (either). */
-export function goTo(place, text, { radius = 5, vehicle = null } = {}) {
+/**
+ * Reach a place. vehicle: 'any' (be driving), 'foot', a vars name, or null (either). `clean`:
+ * only with no police on Kai's tail (a hideout he must not lead them to).
+ */
+export function goTo(place, text, { radius = 5, vehicle = null, clean = false } = {}) {
   return {
     kind: 'goTo',
     place,
     radius,
     requires: vehicle,
     objective: text,
+    objectiveText(ctx) {
+      return clean && ctx.game.wanted.level > 0 ? `Lose the *cops* first: ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text;
+    },
     update(dt, ctx) {
       const player = ctx.game.player.character;
+      if (clean && ctx.game.wanted.level > 0) return false;
       if (!near(player, place, radius)) return false;
       if (vehicle === 'any') return Boolean(player.vehicle);
       if (vehicle === 'foot') return !player.vehicle;

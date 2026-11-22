@@ -299,29 +299,6 @@ function buildShip(buckets, collision) {
   collision.addBox(x0, 295, x1, 317, 14, 'ship');
 }
 
-function buildBoats(buckets, rng) {
-  const plain = buckets.get('plain');
-  const sail = new THREE.BufferGeometry();
-  sail.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 5, 0, 9, 0.4], 3));
-  sail.computeVertexNormals();
-  for (let index = 0; index < 14; index += 1) {
-    const x = rng.range(345, 900);
-    const z = rng.range(-420, 380);
-    if (Math.abs(z) < 30 && x < 420) continue;
-    const yaw = rng.range(0, Math.PI * 2);
-    if (rng.chance(0.6)) {
-      plain.addBox(x, WATER_LEVEL + 0.5, z, 2.2, 1.2, 8, '#ffffff', { yaw });
-      plain.addBox(x, WATER_LEVEL + 6, z, 0.15, 10, 0.15, '#dddddd', { yaw });
-      const matrix = new THREE.Matrix4().makeRotationY(yaw).setPosition(x, WATER_LEVEL + 1.4, z);
-      plain.addGeometry(sail, matrix, '#fdfdfd');
-    } else {
-      plain.addBox(x, WATER_LEVEL + 0.8, z, 4, 1.8, 14, '#f8f9fa', { yaw });
-      plain.addBox(x, WATER_LEVEL + 2.4, z, 3.2, 1.6, 6, '#e9ecef', { yaw });
-      plain.addBox(x, WATER_LEVEL + 2.4, z, 3.25, 0.6, 6.05, '#14213d', { yaw });
-    }
-  }
-}
-
 /** Builds the coast and returns its animated parts and extra buildings for the city builder. */
 export function buildShoreline(scene, materials, textures, atlas, collision, rng) {
   const buckets = new MeshBuckets();
@@ -331,7 +308,6 @@ export function buildShoreline(scene, materials, textures, atlas, collision, rng
   const lighthouse = buildLighthouse(buckets, rng, collision);
   const warehouse = buildQuay(buckets, atlas, rng, collision);
   buildShip(buckets, collision);
-  buildBoats(buckets, rng);
   const group = new THREE.Group();
   scene.add(group);
   const sea = buildSea(scene, textures);

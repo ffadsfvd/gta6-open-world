@@ -6,7 +6,7 @@
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { openGame, sleep } from './lib/chromeSession.mjs';
-import { startNewGame } from './lib/playerBot.mjs';
+import { startNewGame, stealCar } from './lib/playerBot.mjs';
 import { loadStreetGraph } from './lib/navigator.mjs';
 import { missionState, playMission, startNextStory, travel } from './lib/missionBot.mjs';
 
@@ -89,6 +89,11 @@ try {
           if (now.dialogue) {
             await player.tap('KeyE');
             await sleep(400);
+            continue;
+          }
+          if (now.kind === 'getInAnyVehicle' && !now.inCar) {
+            // The chase needs wheels first, as for anyone playing it.
+            await stealCar(player);
             continue;
           }
           if (now.kind === 'chase' && now.vehicle) {

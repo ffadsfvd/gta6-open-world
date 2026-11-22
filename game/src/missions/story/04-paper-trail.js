@@ -69,7 +69,7 @@ export default {
       game.notifications.toast('The courier dropped the ledger!', '', 4);
     }),
     collect('ledger', 'Grab the *ledger*.'),
-    goTo(PLACES.garage, "Bring the ledger to *Juno's Garage*.", { radius: 6 }),
+    goTo(PLACES.garage, "Bring the ledger to *Juno's Garage*.", { radius: 6, clean: true }),
     talk([
       ['juno', 'Shell companies, bribes, boat schedules... and a name. Detective Harlan Voss.'],
       ['kai', 'A cop?'],

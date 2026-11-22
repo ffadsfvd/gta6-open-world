@@ -11,6 +11,7 @@ const quaternion = new THREE.Quaternion();
 const euler = new THREE.Euler(0, 0, 0, 'YXZ');
 const position = new THREE.Vector3();
 const ONE = new THREE.Vector3(1, 1, 1);
+const bodyScale = new THREE.Vector3(1, 1, 1);
 
 /** Advances the animation clocks of one character. */
 export function advanceAnimation(character, dt) {
@@ -69,7 +70,9 @@ export function poseCharacter(character, pose, vehicleMatrix = null) {
     euler.set(anim.lean * (1 - lie) - lie * (Math.PI / 2) + swimTilt, lie > 0.5 ? character.downYaw : character.yaw, 0, 'YXZ');
     quaternion.setFromEuler(euler);
     position.set(character.x, character.y + bob * (1 - lie) + lie * 0.13 + (character.swimming ? 0.25 : 0), character.z);
-    root.compose(position, quaternion, ONE);
+    // Everyone has a build of their own: taller, shorter, broader or slighter.
+    const build = character.appearance.build;
+    root.compose(position, quaternion, build ? bodyScale.set(build.width, build.height, 0.5 + build.width * 0.5) : ONE);
     legL = swing * 0.75;
     legR = -swing * 0.75;
     // Arms swing against the leg on their own side.

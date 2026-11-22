@@ -1,6 +1,8 @@
-// Turns one building spec into geometry: storefront ground floor, textured body, cornice, art
-// deco fins, striped awnings, shop and rooftop neon signs, billboards and roof details.
+// Turns one building spec into geometry: storefront ground floor, textured body (square,
+// round-cornered or stepped back), cornice, art deco fins, striped awnings, shop and rooftop
+// neon signs, billboards and roof details.
 import * as THREE from 'three';
+import { addRoundedPrism } from './roundedPrism.js';
 
 const FACADES = {
   glass: { material: 'glass', tile: [7, 7.6] },
@@ -203,18 +205,37 @@ export function addBuilding(buckets, atlas, spec, rng, collision) {
   const color = new THREE.Color(spec.color);
   const roofColor = spec.style === 'glass' ? '#aeb6bd' : '#bdb5a8';
   let bodyStart = spec.base;
+  const footprint = spec;
+  const round = spec.rounded ? Math.min(w, d) * spec.rounded : 0;
   if (spec.storefront) {
-    buckets.get('storefront').addBox(cx, spec.base + SHOP_HEIGHT / 2, cz, w, SHOP_HEIGHT, d, color, { tile: [6, SHOP_HEIGHT] });
+    if (round) addRoundedPrism(buckets.get('storefront'), footprint, spec.base, SHOP_HEIGHT, color, { tile: [6, SHOP_HEIGHT], radius: round });
+    else buckets.get('storefront').addBox(cx, spec.base + SHOP_HEIGHT / 2, cz, w, SHOP_HEIGHT, d, color, { tile: [6, SHOP_HEIGHT] });
     bodyStart = spec.base + SHOP_HEIGHT;
-    buckets.get('plain').addBox(cx, bodyStart + 0.12, cz, w + 0.5, 0.24, d + 0.5, spec.trim ?? '#ffffff');
+    if (round) addRoundedPrism(buckets.get('plain'), footprint, bodyStart, 0.24, spec.trim ?? '#ffffff', { radius: round, grow: 0.25 });
+    else buckets.get('plain').addBox(cx, bodyStart + 0.12, cz, w + 0.5, 0.24, d + 0.5, spec.trim ?? '#ffffff');
   }
   const bodyHeight = spec.height - bodyStart;
-  buckets.get(facade.material).addBox(cx, bodyStart + bodyHeight / 2, cz, w, bodyHeight, d, color, { tile: facade.tile, topColor: roofColor });
+  const facadeBucket = buckets.get(facade.material);
+  if (round) {
+    addRoundedPrism(facadeBucket, footprint, bodyStart, bodyHeight, color, { tile: facade.tile, topColor: roofColor, radius: round });
+  } else if (spec.setback && bodyHeight > 22) {
+    // A stepped tower: the top floors stand back from the street behind a terrace.
+    const lower = Math.round((bodyHeight * 0.62) / facade.tile[1]) * facade.tile[1];
+    const inset = Math.min(w, d) * 0.14;
+    facadeBucket.addBox(cx, bodyStart + lower / 2, cz, w, lower, d, color, { tile: facade.tile, topColor: roofColor });
+    buckets.get('plain').addBox(cx, bodyStart + lower + 0.25, cz, w + 0.3, 0.5, d + 0.3, spec.trim ?? '#ffffff');
+    facadeBucket.addBox(cx, bodyStart + lower + (bodyHeight - lower) / 2, cz, w - inset * 2, bodyHeight - lower, d - inset * 2, color, { tile: facade.tile, topColor: roofColor, vStart: lower / facade.tile[1] });
+  } else {
+    facadeBucket.addBox(cx, bodyStart + bodyHeight / 2, cz, w, bodyHeight, d, color, { tile: facade.tile, topColor: roofColor });
+  }
   if (spec.style === 'deco') {
-    buckets.get('plain').addBox(cx, spec.height + 0.3, cz, w + 0.6, 0.6, d + 0.6, spec.trim ?? '#ffffff');
+    const trim = spec.trim ?? '#ffffff';
+    if (round) addRoundedPrism(buckets.get('plain'), footprint, spec.height, 0.6, trim, { radius: round, grow: 0.3 });
+    else buckets.get('plain').addBox(cx, spec.height + 0.3, cz, w + 0.6, 0.6, d + 0.6, trim);
     const bands = Math.floor((spec.height - bodyStart) / 6.8);
     for (let band = 1; band <= bands; band += 2) {
-      buckets.get('plain').addBox(cx, bodyStart + band * 6.8 - 0.1, cz, w + 0.16, 0.22, d + 0.16, spec.trim ?? '#ffffff');
+      if (round) addRoundedPrism(buckets.get('plain'), footprint, bodyStart + band * 6.8 - 0.21, 0.22, trim, { radius: round, grow: 0.08 });
+      else buckets.get('plain').addBox(cx, bodyStart + band * 6.8 - 0.1, cz, w + 0.16, 0.22, d + 0.16, trim);
     }
   }
   if (spec.fin) {

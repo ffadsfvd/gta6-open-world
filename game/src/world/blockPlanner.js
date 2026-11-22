@@ -83,6 +83,8 @@ function planDeco(b, rng, plan) {
       awning: rng.chance(0.6) ? rng.pick(AWNINGS) : null,
       sign: rng.chance(0.5) ? rng.pick(SHOP_SIGNS) : null,
       roofSign: rng.chance(0.35) ? rng.pick(DECO_SIGNS) : null,
+      // Streamline hotels: rounded corners on about half of them.
+      rounded: rng.chance(0.45) ? 0.2 : 0,
     });
     plan.buildings.push(spec);
   }
@@ -113,12 +115,16 @@ function planTowers(b, rng, plan) {
     const tower = shrinkLot(lot, rng, 0.72, 0.92);
     const tall = rng.chance(0.65);
     const height = tall ? rng.range(48, 104) : rng.range(26, 44);
+    const shape = rng.next();
     plan.buildings.push(building(tower, tall ? 'glass' : 'office', height, tall ? rng.pick(GLASS) : rng.pick(OFFICE), {
       storefront: true,
       trim: '#e9edf0',
       roof: tall ? rng.pick(['tiers', 'spire', 'helipad', 'crown']) : 'clutter',
       sign: rng.chance(0.3) ? rng.pick(['bank', 'gazette', 'motors', 'cafe']) : null,
       billboard: !tall && rng.chance(0.5) ? rng.pick(BILLBOARDS) : null,
+      // Round glass towers, stepped towers and plain slabs.
+      rounded: tall && shape < 0.3 ? 0.42 : 0,
+      setback: shape >= 0.3 && shape < 0.7,
     }));
   });
 }
@@ -134,6 +140,8 @@ function planMidrise(b, rng, plan) {
       awning: rng.chance(0.4) ? rng.pick(AWNINGS) : null,
       sign: rng.chance(0.4) ? rng.pick(SHOP_SIGNS) : null,
       billboard: rng.chance(0.3) ? rng.pick(BILLBOARDS) : null,
+      setback: rng.chance(0.3),
+      rounded: residential && rng.chance(0.25) ? 0.18 : 0,
     }));
   });
 }
