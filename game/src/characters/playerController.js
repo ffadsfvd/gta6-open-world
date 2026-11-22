@@ -29,7 +29,9 @@ export class PlayerController {
     const mouse = input.takeMouse();
     this.dodgeCooldown = Math.max(0, (this.dodgeCooldown ?? 0) - dt);
     if (!this.enabled) return;
-    camera.look(mouse.x, mouse.y, this.sensitivity, this.invertY);
+    // Through the rifle scope the view is narrower, so the mouse turns it more finely.
+    const zoom = Math.min(1, camera.fov / CAMERA_TUNING.fov);
+    camera.look(mouse.x, mouse.y, this.sensitivity * zoom, this.invertY);
     if (this.character.vehicle) this.updateDriving(dt);
     else this.updateOnFoot(dt);
   }

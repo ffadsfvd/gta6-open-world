@@ -4,8 +4,8 @@
 
 const RESTITUTION_WORLD = 0.18;
 const RESTITUTION_CARS = 0.3;
-/** Health lost per m/s of impact above the threshold: three hard crashes set a car burning. */
-const DAMAGE_PER_MS = 20;
+/** Health lost per m/s of impact above the threshold: a car takes a few hard crashes before it burns. */
+const DAMAGE_PER_MS = 15;
 const IMPACT_THRESHOLD = 4;
 
 function axesOf(vehicle) {

@@ -136,7 +136,12 @@ function streetScene(game) {
   game.simulate(1.2);
   game.dialogue.play([['thug', "Look who it is, Lou's little nephew! Crane says this plaza is his now."]], { auto: false });
   game.dialogue.reveal();
-  for (const member of game.missions.current.vars.crew) member.brain.provoke();
+  for (const member of game.missions.current.vars.crew) {
+    member.brain.provoke();
+    // They came looking for this fight: no hesitation, guns already up.
+    member.brain.reaction = 0;
+    member.brain.cooldown = 0.2;
+  }
   settleCamera(game);
   game.combat.firePlayerShot(game.combat.arsenal.spec);
   game.wanted.setLevel(1);

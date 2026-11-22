@@ -99,11 +99,12 @@ export class PoliceDriver {
       const lead = Math.min(1.1, distance / 22);
       aimX = target.x + tvx * lead;
       aimZ = target.z + tvz * lead;
-      if (player.vehicle && distance < 26) {
-        // Pull alongside rather than straight into the bumper.
+      if (player.vehicle && distance < 26 && game.wanted.level >= 3) {
+        // From three stars, pull alongside rather than straight into the bumper; below that,
+        // tail the suspect from behind.
         const speed = Math.hypot(tvx, tvz) || 1;
-        aimX += (-tvz / speed) * this.side * 3;
-        aimZ += (tvx / speed) * this.side * 3;
+        aimX += (-tvz / speed) * this.side * 3.4;
+        aimZ += (tvx / speed) * this.side * 3.4;
       }
       this.waypoints = [];
     } else {

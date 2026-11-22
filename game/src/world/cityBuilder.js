@@ -15,6 +15,7 @@ import { Vegetation } from './vegetation.js';
 import { BreakableProps } from './breakableProps.js';
 import { TrafficSignals } from './trafficSignals.js';
 import { Boats } from './boats.js';
+import { buildBoardwalk } from './boardwalk.js';
 import { groundHeight } from './terrain.js';
 
 const GROUND_SCALE = { paving: 6, grass: 6, plaza: 4, concrete: 6 };
@@ -49,6 +50,7 @@ export function buildCity({ scene, textures, materials, atlas, collision, events
 
   const shore = buildShoreline(group, materials, textures, atlas, collision, rng.fork(901));
   addBuilding(shore.buckets, atlas, shore.warehouse, rng.fork(902), collision);
+  buildBoardwalk(shore.buckets, props);
   shore.buckets.flush(group, materials, { noShadow: FLAT_BUCKETS });
   buildBackdrop(group, materials, rng.fork(77));
   // Invisible walls where the hills begin, so nothing drives into the slopes.

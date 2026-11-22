@@ -50,7 +50,11 @@ export class WantedSystem {
       const player = game.player.character;
       if (!player.vehicle || e.speed < 6) return;
       const other = e.a === player.vehicle ? e.b : e.b === player.vehicle ? e.a : null;
-      if (other && other.type === 'police') this.report('rammedPolice', 0.9, 0);
+      // A scrum of bumps in one chase counts once every few seconds, not once per contact.
+      if (other && other.type === 'police' && game.time - (this.lastRam ?? -99) > 4) {
+        this.lastRam = game.time;
+        this.report('rammedPolice', 0.9, 0);
+      }
     });
     events.on('vehicleShot', (e) => {
       if (isPlayer(e.shooter) && e.vehicle.type === 'police') this.report('shotPolice', 0.8, 0);
