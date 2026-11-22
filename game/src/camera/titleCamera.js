@@ -1,5 +1,5 @@
 // The slow scenic drift behind the title screen: a high arc over Sunwheel Beach looking across
-// Coral Strand to the Glasswater towers and the hills.
+// Carmine Strand to the Glasswater towers and the hills.
 import * as THREE from 'three';
 
 export class TitleCamera {

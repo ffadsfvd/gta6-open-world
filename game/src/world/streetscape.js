@@ -40,9 +40,9 @@ export function buildStreetscape(scene, materials, collision, vegetation, props,
     for (const side of ['n', 's', 'e', 'w']) {
       const line = sideLine(b, side);
       for (const t of LAMP_SPOTS) props.add('lamp', line.x0 + line.dx * t, line.z0 + line.dz * t, line.yaw, CURB_HEIGHT);
-      if (district !== 'port') {
+      if (district !== 'docks') {
         for (const t of TREE_SPOTS) {
-          const kind = district === 'palmetto' ? (rng.chance(0.5) ? 'round' : 'palm') : 'palm';
+          const kind = district === 'jacaranda' ? (rng.chance(0.5) ? 'round' : 'palm') : 'palm';
           vegetation.addTree(kind, line.x0 + line.dx * t, line.z0 + line.dz * t, rng.range(0, Math.PI * 2), rng.range(0.85, 1.2));
         }
       }
@@ -53,7 +53,7 @@ export function buildStreetscape(scene, materials, collision, vegetation, props,
         const t = rng.pick([15, 39, 52]);
         props.add('bin', line.x0 + line.dx * t + line.wallX * wall, line.z0 + line.dz * t + line.wallZ * wall, 0, CURB_HEIGHT);
       }
-      if (special !== 'hotel' && district !== 'port' && rng.chance(0.45)) {
+      if (special !== 'hotel' && district !== 'docks' && rng.chance(0.45)) {
         const t = rng.pick([18, 46]);
         props.add('bench', line.x0 + line.dx * t + line.wallX * wall, line.z0 + line.dz * t + line.wallZ * wall, line.yaw + Math.PI, CURB_HEIGHT);
       }

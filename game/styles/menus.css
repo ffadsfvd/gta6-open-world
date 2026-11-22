@@ -38,7 +38,7 @@
 }
 
 .logo-top, .logo-bottom {
-  font: 900 92px var(--display-font);
+  font: 900 112px var(--display-font);
   letter-spacing: 2px;
   background: linear-gradient(180deg, #fff3c4 0%, #ffb347 38%, #ff5f7a 70%, #c2185b 100%);
   -webkit-background-clip: text;
@@ -48,8 +48,9 @@
 }
 
 .logo-bottom {
-  font-size: 120px;
-  letter-spacing: 12px;
+  margin: 10px 0 0 6px;
+  font-size: 45px;
+  letter-spacing: 9px;
   background: linear-gradient(180deg, #a8f5ff 0%, #2ec4d6 45%, #1a6fa3 100%);
   -webkit-background-clip: text;
   background-clip: text;

@@ -12,11 +12,11 @@ export default {
   steps: () => [
     talk([
       ['voss', "Kai Moreno. Relax, I'm not here to arrest you. Not today."],
-      ['voss', "There's a package at the Pier 9 warehouse in Old Port. Bring it to me and your aunt's debts disappear."],
+      ['voss', "There's a package at the Pier 9 warehouse in Ironwharf. Bring it to me and your aunt's debts disappear."],
       ['kai', 'And if I say no?'],
       ['voss', 'Then I remember how much paperwork a parole violation needs. Go.'],
     ]),
-    goTo(PLACES.warehouse, 'Go to the *Pier 9 warehouse* in Old Port.', { radius: 14 }),
+    goTo(PLACES.warehouse, 'Go to the *Pier 9 warehouse* in Ironwharf.', { radius: 14 }),
     call((ctx) => {
       ctx.vars.package = { x: PLACES.warehouse.x, z: PLACES.warehouse.z + 3, y: 0.15 };
     }),

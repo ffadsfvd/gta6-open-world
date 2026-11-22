@@ -1,4 +1,4 @@
-// Assembles Solmara: roads and sidewalks, every block's buildings and set pieces, the coast,
+// Assembles Ondaluz: roads and sidewalks, every block's buildings and set pieces, the coast,
 // the hills, street furniture and trees, and keeps the parts that animate or answer questions.
 import * as THREE from 'three';
 import { CURB_HEIGHT } from '../core/config.js';

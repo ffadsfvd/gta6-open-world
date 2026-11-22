@@ -11,6 +11,8 @@ export class GangBrain {
     this.alertRange = alertRange;
     this.accuracy = accuracy;
     this.alert = false;
+    // Seconds between noticing Kai and the first shot or swing: time for him to react.
+    this.reaction = rng.range(1.6, 2.8);
     this.cooldown = rng.range(0.4, 1.4);
     this.strafe = rng.chance(0.5) ? 1 : -1;
     this.strafeTimer = rng.range(1, 3);
@@ -20,6 +22,13 @@ export class GangBrain {
 
   provoke() {
     this.alert = true;
+  }
+
+  /** A bullet or a punch landed: they flinch, and their next shot or swing comes later. */
+  stagger(seconds) {
+    this.alert = true;
+    this.cooldown = Math.max(this.cooldown, seconds);
+    this.flinch = seconds * 0.6;
   }
 
   update(dt, game) {
@@ -43,6 +52,16 @@ export class GangBrain {
         return;
       }
     }
+    // Hurting one of them cuts the hesitation short.
+    this.reaction -= me.health < me.maxHealth ? dt * 3 : dt;
+    const ready = this.reaction <= 0;
+    if (this.flinch > 0) {
+      // Reeling from a hit: no moving in for a moment.
+      this.flinch -= dt;
+      me.setMove(0, 0, 0);
+      this.cooldown -= dt;
+      return;
+    }
     const sight = !game.collision.segmentBlocked(me.x, me.z, target.x, target.z, 1.5);
     if (this.armed) {
       this.strafeTimer -= dt;
@@ -58,22 +77,22 @@ export class GangBrain {
       else me.setMove(-dz / length * this.strafe, dx / length * this.strafe, 1.8);
       me.aimYaw = Math.atan2(dx, dz);
       this.cooldown -= dt;
-      if (sight && distance < 40 && this.cooldown <= 0) {
+      if (ready && sight && distance < 40 && this.cooldown <= 0) {
         game.combat.fireNpcShot(me, player, this.accuracy, this.weapon);
-        this.cooldown = this.weapon === 'smg' ? this.rng.range(0.1, 0.16) : this.rng.range(0.55, 1.1);
-        if (this.rng.chance(this.weapon === 'smg' ? 0.08 : 0.25)) this.cooldown += this.rng.range(0.8, 1.6);
+        this.cooldown = this.weapon === 'smg' ? this.rng.range(0.12, 0.2) : this.rng.range(0.8, 1.4);
+        if (this.rng.chance(this.weapon === 'smg' ? 0.12 : 0.3)) this.cooldown += this.rng.range(1, 2);
       }
       return;
     }
     me.aimYaw = null;
-    if (distance > 1.3) me.setMove(target.x - me.x, target.z - me.z, 5.6);
+    if (distance > 1.3) me.setMove(target.x - me.x, target.z - me.z, ready ? 5.6 : 3);
     else {
       me.setMove(0, 0, 0);
       me.yaw = Math.atan2(target.x - me.x, target.z - me.z);
       this.cooldown -= dt;
-      if (this.cooldown <= 0 && !player.vehicle) {
+      if (ready && this.cooldown <= 0 && !player.vehicle) {
         game.combat.punch(me);
-        this.cooldown = this.rng.range(0.7, 1.2);
+        this.cooldown = this.rng.range(1.2, 1.8);
       }
     }
   }

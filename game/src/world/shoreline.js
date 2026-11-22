@@ -1,6 +1,6 @@
-// Everything where Solmara meets the water: Seabreeze promenade, Sunwheel Beach with umbrellas
+// Everything where Ondaluz meets the water: Seabreeze promenade, Sunwheel Beach with umbrellas
 // and lifeguard towers, the turquoise shallows and open sea, Sunwheel Pier and its turning wheel,
-// the striped lighthouse, and the Old Port quay with gantry cranes, containers and a cargo ship.
+// the striped lighthouse, and the Ironwharf quay with gantry cranes, containers and a cargo ship.
 import * as THREE from 'three';
 import { CURB_HEIGHT, GRID_X, GRID_Z, PIER, ROAD_HALF, SHORE, WATER_LEVEL } from '../core/config.js';
 // (GRID_X gives the coastal boulevard's line; the promenade starts at its east curb.)

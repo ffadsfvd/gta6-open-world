@@ -210,6 +210,8 @@ export class TrafficDriver {
       }
     }
     if (target.offTrack > 2.5) wanted = Math.min(wanted, 7);
+    // A wrecked engine: smoking and limping, the driver pulls over and gives up.
+    if (vehicle.healthShare < 0.3) wanted = Math.min(wanted, vehicle.healthShare < 0.22 ? 0 : 4);
     const gap = this.scanAhead(world, 6 + Math.max(0, speed) * 1.4);
     if (gap < 30) wanted = Math.min(wanted, Math.max(0, (gap - 2.2) * 1.1));
     if (gap < 4 && speed < 1) {

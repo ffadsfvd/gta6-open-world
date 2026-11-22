@@ -163,7 +163,7 @@ function mapScene(game) {
   game.openMap();
 }
 
-/** The title screen over Coral Strand and the Glasswater skyline. */
+/** The title screen over Carmine Strand and the Glasswater skyline. */
 function titleScene(game) {
   game.showTitle();
   game.simulate(2);

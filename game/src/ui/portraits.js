@@ -1,4 +1,4 @@
-// Draws the dialogue portraits of the cast on a canvas: a sunset backdrop, shoulders in their
+// Draws the dialogue portraits of the cast on a canvas: an evening-sky backdrop, shoulders in their
 // shirt colour, face, hair style and each character's signature detail (earrings, cap,
 // moustache, shades, headband, headset).
 import { CAST } from '../missions/cast.js';

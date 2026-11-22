@@ -45,6 +45,8 @@ export class Vehicle {
     this.lastImpact = 0;
     this.lastImpactBy = null;
     this.engineOn = false;
+    /** Damage multiplier: a mission target can be flimsier than the cars chasing it. */
+    this.fragility = 1;
   }
 
   setType(type) {
@@ -88,7 +90,7 @@ export class Vehicle {
   /** Takes damage; returns true when this blow wrecked the car. */
   damage(amount, source = null) {
     if (this.destroyed || amount <= 0) return false;
-    this.health = Math.max(0, this.health - amount);
+    this.health = Math.max(0, this.health - amount * this.fragility);
     if (source) this.lastImpactBy = source;
     if (this.health <= 0) {
       this.destroyed = true;

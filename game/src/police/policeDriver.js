@@ -1,10 +1,12 @@
 // Pursuit driving for police cruisers: route along the street grid (A*) while the suspect is
 // out of sight, cut straight at them (leading their velocity) when the way is clear, box them
-// in or ram at high heat, slow to a stop beside a suspect on foot, and back out when stuck.
+// in or ram at high wanted levels, slow to a stop beside a suspect on foot, and back out when stuck.
 import { clamp } from '../core/mathUtils.js';
 import { speedForHeadingError, speedForLineAhead } from '../ai/cornering.js';
 
 const REPLAN_SECONDS = 1.4;
+/** Top pursuit speed by wanted level (m/s): one star is a patrol car, five stars is a pursuit unit. */
+const PURSUIT_SPEED = [0, 25, 29, 33, 40, 46];
 
 export class PoliceDriver {
   constructor(vehicle, rng) {
@@ -51,6 +53,21 @@ export class PoliceDriver {
     this.waypoints.push({ x: tx, z: tz });
   }
 
+  /** A junction near where the suspect was last seen; a new one each time the car gets there. */
+  searchPoint(game) {
+    const seen = game.wanted.lastKnown;
+    const vehicle = this.vehicle;
+    const search = this.search;
+    if (!search || search.from !== seen || Math.hypot(search.x - vehicle.x, search.z - vehicle.z) < 14) {
+      const angle = this.rng.range(0, Math.PI * 2);
+      const reach = this.rng.range(15, 75);
+      const node = game.network.nearestNode(seen.x + Math.sin(angle) * reach, seen.z + Math.cos(angle) * reach);
+      this.search = { x: node.x, z: node.z, from: seen };
+      this.replan = 0;
+    }
+    return this.search;
+  }
+
   update(dt, game) {
     const vehicle = this.vehicle;
     const controls = vehicle.controls;
@@ -71,6 +88,11 @@ export class PoliceDriver {
     const tvz = target.vz ?? 0;
     const distance = Math.hypot(target.x - vehicle.x, target.z - vehicle.z);
     const clear = distance < 60 && !game.collision.segmentBlocked(vehicle.x, vehicle.z, target.x, target.z, 1);
+    // Out of sight for a while: they only know where Kai was last seen, and comb the streets
+    // around it instead of homing in on him. This is what makes hiding work.
+    const search = !clear && game.wanted.searching ? this.searchPoint(game) : null;
+    const goalX = search ? search.x : target.x;
+    const goalZ = search ? search.z : target.z;
     let aimX;
     let aimZ;
     if (clear) {
@@ -87,7 +109,7 @@ export class PoliceDriver {
     } else {
       this.replan -= dt;
       if (this.replan <= 0 || this.waypoints.length === 0) {
-        this.plan(game, target.x, target.z);
+        this.plan(game, goalX, goalZ);
         this.replan = REPLAN_SECONDS;
       }
       while (this.waypoints.length > 1 && Math.hypot(this.waypoints[0].x - vehicle.x, this.waypoints[0].z - vehicle.z) < 6) this.waypoints.shift();
@@ -95,9 +117,28 @@ export class PoliceDriver {
       aimX = point.x;
       aimZ = point.z;
       // On the last street before the suspect: head for them, not for a junction behind them.
-      if (this.waypoints.length <= 2 && distance < 70) {
+      if (!search && this.waypoints.length <= 2 && distance < 70) {
         aimX = target.x;
         aimZ = target.z;
+      }
+    }
+    const footTarget = !player.vehicle;
+    const level = game.wanted.level;
+    const targetSpeed = Math.hypot(tvx, tvz);
+    // Coming the other way at the suspect's car: no head-on ramming below four stars. Slow
+    // down and keep to the side, ready to turn in behind.
+    let headOn = false;
+    if (!footTarget && level < 4 && distance < 55 && targetSpeed > 4) {
+      const toCopX = vehicle.x - target.x;
+      const toCopZ = vehicle.z - target.z;
+      const ahead = (toCopX * tvx + toCopZ * tvz) / ((distance || 1) * targetSpeed) > 0.5;
+      const ownSpeed = Math.hypot(vehicle.vx, vehicle.vz) || 1;
+      const opposite = (vehicle.vx * tvx + vehicle.vz * tvz) / (ownSpeed * targetSpeed) < -0.4;
+      if (ahead && opposite) {
+        // Pull over to the right, as a patrol car does to let a speeder pass, then turn in behind.
+        headOn = true;
+        aimX = vehicle.x + (vehicle.vx / ownSpeed) * 20 + (-vehicle.vz / ownSpeed) * 4.5;
+        aimZ = vehicle.z + (vehicle.vz / ownSpeed) * 20 + (vehicle.vx / ownSpeed) * 4.5;
       }
     }
     const local = vehicle.worldToLocal(aimX, aimZ);
@@ -105,12 +146,13 @@ export class PoliceDriver {
     // Heading-error steering: decisive at corners and for targets behind, calm when lined up.
     const angleLeft = Math.atan2(local.x, local.z);
     const steer = clamp(-angleLeft * 2.2, -1, 1);
-    const footTarget = !player.vehicle;
-    const level = game.wanted.level;
-    const targetSpeed = Math.hypot(tvx, tvz);
     // Fast on the straights, slowing in time for the corners the tyres can actually take.
-    let wanted = clear ? 46 * this.aggression : Math.min(30, speedForLineAhead(vehicle, this.waypoints));
+    const topSpeed = PURSUIT_SPEED[level] * this.aggression + 4;
+    let wanted = clear ? topSpeed : Math.min(topSpeed * 0.8, speedForLineAhead(vehicle, this.waypoints));
     wanted = Math.min(wanted, speedForHeadingError(angleLeft));
+    if (headOn) wanted = Math.min(wanted, 11);
+    // Searching: a slow crawl, looking down side streets.
+    if (search) wanted = Math.min(wanted, 15);
     // A suspect on foot: brake in time to stop a few metres short, never run them down.
     if (footTarget && distance < 60) wanted = Math.min(wanted, Math.sqrt(2 * 7 * Math.max(0, distance - 8)));
     else if (!footTarget && clear && distance < 22) {

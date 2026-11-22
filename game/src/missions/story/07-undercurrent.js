@@ -1,18 +1,18 @@
-// Story 7 — High Tide. Crane's big shipment lands at Lighthouse Point. Kai takes out Crane and
-// his crew, outruns half the Solmara Bay Police and meets Lou back at the taco truck.
+// Story 7 — Undercurrent. Crane's big shipment lands at Lighthouse Point after dark. Kai takes
+// out Crane and his crew, outruns half the Ondaluz Bay Police and meets Lou back at the taco truck.
 import { PLACES } from '../../world/cityPlan.js';
 import { call, eliminate, goTo, loseCops, talk } from '../missionSteps.js';
 import { OUTFITS } from '../../characters/appearance.js';
 
 export default {
-  id: 'highTide',
-  title: 'High Tide',
+  id: 'undercurrent',
+  title: 'Undercurrent',
   giver: 'lou',
   reward: 10000,
   story: true,
   steps: () => [
     talk([
-      ['lou', "Crane's big shipment comes in at Lighthouse Point when the tide is high. Voss sent his own men to guard it."],
+      ['lou', "Crane's big shipment comes in at Lighthouse Point tonight. Voss sent his own men to guard it."],
       ['lou', 'End this, Kai. For the family. For the whole Strand.'],
       ['kai', 'One last job, Auntie.'],
     ]),
@@ -30,14 +30,14 @@ export default {
       ctx.vars.crew[0].label = 'crane';
       ctx.vars.crane = ctx.vars.crew[0];
     }),
-    talk([['crane', 'Moreno! You should have stayed upstate. This tide belongs to me.']], { freeze: false }),
+    talk([['crane', 'Moreno! You should have stayed upstate. This coast belongs to me.']], { freeze: false }),
     eliminate('crew', 'Take out *Silas Crane* and his crew.'),
-    loseCops('Every cruiser in Solmara is coming. *Lose them*!', 4),
+    loseCops('Every cruiser in Ondaluz is coming. *Lose them*!', 4),
     goTo(PLACES.tacoTruck, 'Meet Lou at the *taco truck*.', { radius: 4 }),
     talk([
       ['lou', 'Ay, mijo. Is it over?'],
       ['kai', "Crane's done, and Voss's ledger is on the Gazette's desk by now. The docks are ours again."],
-      ['lou', 'Then tomorrow, tacos are on the house. For everyone in Solmara.'],
+      ['lou', 'Then tomorrow, tacos are on the house. For everyone in Ondaluz.'],
     ]),
   ],
   onPass(game) {

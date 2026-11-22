@@ -1,4 +1,4 @@
-// Sends the Solmara Bay Police after the player: more cruisers per star, patrol cars nearby
+// Sends the Ondaluz Bay Police after the player: more cruisers per star, patrol cars nearby
 // joining the chase, officers jumping out near a stopped suspect, roadblocks across the road
 // ahead from three stars, and everyone standing down when the stars are gone.
 import { OUTFITS } from '../characters/appearance.js';
@@ -65,9 +65,13 @@ export class PoliceDispatcher {
   spawnChaser() {
     const game = this.game;
     const player = game.player.character;
+    // While Kai is out of sight, reinforcements head for the search area, not for him.
+    const searching = game.wanted.searching;
+    const center = searching ? game.wanted.lastKnown : player;
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const spot = game.network.randomLaneSpot(this.rng, player, 85, 165);
+      const spot = game.network.randomLaneSpot(this.rng, center, searching ? 40 : 85, searching ? 130 : 165);
       if (!spot) continue;
+      if (searching && Math.hypot(spot.x - player.x, spot.z - player.z) < 80) continue;
       if (game.population.inView(spot.x, spot.z) && attempt < 4) continue;
       if (game.vehicles.nearest(spot.x, spot.z, 8)) continue;
       return this.spawnUnit(spot, true);

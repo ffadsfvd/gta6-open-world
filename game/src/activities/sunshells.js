@@ -1,4 +1,4 @@
-// Twelve golden sunshells hidden around Solmara: courtyards, the beach, the pier's end, the
+// Twelve golden sunshells hidden around Ondaluz: courtyards, the beach, the pier's end, the
 // park, the quay. Each one found pays out and counts toward the stats screen.
 
 export const SUNSHELLS = [

@@ -1,4 +1,4 @@
-// The car gauge: a sunset-coloured arc dial in miles per hour with a needle, a digital readout
+// The car gauge: a dusk-coloured arc dial in miles per hour with a needle, a digital readout
 // and the gear, drawn on its own canvas every frame while driving.
 
 const MAX_MPH = 160;

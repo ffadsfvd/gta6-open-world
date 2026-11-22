@@ -31,7 +31,7 @@ export default {
     deliver('vexa', PLACES.garage, "Deliver the *Vexa GT* to Juno's Garage."),
     talk([
       ['juno', 'Not bad, Moreno. Not bad at all. Here is your cut.'],
-      ['juno', 'And take this. Bayside Arms will sell you rounds for it. Solmara is getting rough.'],
+      ['juno', 'And take this. Bayside Arms will sell you rounds for it. Ondaluz is getting rough.'],
     ]),
   ],
   onPass(game) {

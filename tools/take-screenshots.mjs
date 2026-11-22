@@ -151,7 +151,7 @@ async function main() {
   }
 
   const server = spawn(process.execPath, [join(root, 'serve.ts'), '--port', String(SERVE_PORT)], { stdio: 'ignore' });
-  const profile = mkdtempSync(join(tmpdir(), 'solmara-chrome-'));
+  const profile = mkdtempSync(join(tmpdir(), 'ondaluz-chrome-'));
   const chrome = spawn(CHROME, [
     '--headless=new',
     `--remote-debugging-port=${DEBUG_PORT}`,

@@ -3,7 +3,7 @@
 // blocks (plaza, park, police, hospital, the tower, safehouse, garage, depot, gas station, hotel).
 import { CURB_HEIGHT } from '../core/config.js';
 import { blockBounds, districtOfBlock, specialOfBlock } from './cityPlan.js';
-import { DECO_SIGNS, PORT_SIGNS, SHOP_SIGNS, BILLBOARDS } from './signCatalog.js';
+import { DECO_SIGNS, DOCK_SIGNS, SHOP_SIGNS, BILLBOARDS } from './signCatalog.js';
 
 const BASE = CURB_HEIGHT;
 const PASTELS = ['#f7b6c2', '#a8e6cf', '#ffd3a5', '#c9b6f2', '#a9d8f5', '#fff1a8', '#f9c6a0', '#b5ead7', '#ffdac1', '#f6a6b2', '#9fe2e8'];
@@ -183,7 +183,7 @@ function planWarehouses(b, rng, plan) {
       trim: '#8d8a84',
       roof: 'clutter',
       door: true,
-      sign: rng.chance(0.5) ? rng.pick(PORT_SIGNS) : null,
+      sign: rng.chance(0.5) ? rng.pick(DOCK_SIGNS) : null,
     }));
   });
   plan.ground = 'concrete';
@@ -307,8 +307,8 @@ export function planBlock(bx, bz, rng) {
   else if (district === 'strand') planDeco(bounds, rng, plan);
   else if (district === 'mercado') planShops(bounds, rng, plan);
   else if (district === 'glass') planTowers(bounds, rng, plan);
-  else if (district === 'palmetto') planHouses(bounds, rng, plan);
-  else if (district === 'port') planWarehouses(bounds, rng, plan);
+  else if (district === 'jacaranda') planHouses(bounds, rng, plan);
+  else if (district === 'docks') planWarehouses(bounds, rng, plan);
   else planMidrise(bounds, rng, plan);
   return plan;
 }

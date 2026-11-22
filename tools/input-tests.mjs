@@ -192,7 +192,7 @@ const TESTS = {
     const car = await stealCar(p);
     t.check('got a car', Boolean(car));
     if (!car) return;
-    // Head west into the apartment blocks of Coral Strand and keep the foot down.
+    // Head west into the apartment blocks of Carmine Strand and keep the foot down.
     let s = await snapshot(p);
     await driveTo(p, { x: s.x - 60, z: s.z }, { radius: 3, timeoutMs: 6000, cruise: 30 });
     await p.hold('KeyW', 1500);
@@ -459,7 +459,7 @@ const TESTS = {
     t.check('the safehouse offers a save', /save/i.test(s.help), s.help);
     await p.tap('KeyE');
     await sleep(400);
-    t.check('E saves the game', await p.read("Boolean(localStorage.getItem('solmaraHeat.save.v1'))"));
+    t.check('E saves the game', await p.read("Boolean(localStorage.getItem('ondaluz.save.v1'))"));
     await reloadGame(t.session);
     await sleep(500);
     s = await snapshot(p);

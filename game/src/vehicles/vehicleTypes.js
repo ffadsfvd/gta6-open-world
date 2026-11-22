@@ -1,4 +1,4 @@
-// Every vehicle model of Solmara: its invented name, size, handling numbers, paint choices and
+// Every vehicle model of Ondaluz: its invented name, size, handling numbers, paint choices and
 // the side profiles (body and cabin) the model builder extrudes into a car shape.
 
 export const VEHICLE_TYPES = {
@@ -54,7 +54,7 @@ export const VEHICLE_TYPES = {
     taxiSign: true,
   },
   police: {
-    name: 'SBPD Cruiser', length: 4.8, width: 1.95, mass: 1650, power: 13.5, maxSpeed: 58, grip: 10.5, steerMax: 0.56, wheelRadius: 0.38, wheelBase: 1.5,
+    name: 'OBPD Cruiser', length: 4.8, width: 1.95, mass: 1650, power: 13.5, maxSpeed: 58, grip: 10.5, steerMax: 0.56, wheelRadius: 0.38, wheelBase: 1.5,
     body: null, cabin: null, base: 'muscle',
     paints: ['#f8f9fa'],
     lightBar: true,

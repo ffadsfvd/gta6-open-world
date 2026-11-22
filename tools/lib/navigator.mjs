@@ -204,9 +204,20 @@ export async function driveRoute(player, goal, { radius = 8, timeoutMs = 120000,
   let last = Date.now();
   let result = { arrived: false, reason: 'timeout' };
   while (Date.now() - started < timeoutMs) {
-    const car = await player.read('(() => { const v = __game.player.character.vehicle; return v ? { x: v.x, z: v.z, yaw: v.yaw, speed: v.forwardSpeed } : null; })()');
+    const car = await player.read('(() => { const g = __game, v = g.player.character.vehicle; return v ? { x: v.x, z: v.z, yaw: v.yaw, speed: v.forwardSpeed, fate: g.fate.kind, onFire: Boolean(v.onFire) } : null; })()');
     if (!car) {
       result = { arrived: false, reason: 'not in a car' };
+      break;
+    }
+    if (car.fate) {
+      result = { arrived: false, reason: car.fate };
+      break;
+    }
+    if (car.onFire) {
+      // Flames under the bonnet: get out before it blows, as anyone would.
+      await keys(player, []);
+      await player.tap('KeyF');
+      result = { arrived: false, reason: 'bailed out of a burning car' };
       break;
     }
     if (until && (await until())) {
@@ -231,7 +242,7 @@ export async function driveRoute(player, goal, { radius = 8, timeoutMs = 120000,
     const now = Date.now();
     const dt = (now - last) / 1000;
     last = now;
-    const look = 7 + Math.max(0, car.speed) * 0.55;
+    const look = 5 + Math.max(0, car.speed) * 0.45;
     const aim = pursue(points, state, car.x, car.z, look);
     const error = wrap(Math.atan2(aim.x - car.x, aim.z - car.z) - car.yaw);
     // Slow for the next corner and for the goal.
@@ -248,7 +259,7 @@ export async function driveRoute(player, goal, { radius = 8, timeoutMs = 120000,
         break;
       }
     }
-    let wantedSpeed = Math.min(cruise, Math.sqrt(8 * 8 + 2 * 6 * Math.max(0, distanceToTurn - 6)));
+    let wantedSpeed = Math.min(cruise, Math.sqrt(6.5 * 6.5 + 2 * 6 * Math.max(0, distanceToTurn - 4)));
     if (stopAtGoal) wantedSpeed = Math.min(wantedSpeed, Math.sqrt(2 * 5 * Math.max(0, toGoal - radius * 0.5)) + 1);
     if (Math.abs(error) > 0.6) wantedSpeed = Math.min(wantedSpeed, 7);
     const pressed = [];
@@ -259,8 +270,14 @@ export async function driveRoute(player, goal, { radius = 8, timeoutMs = 120000,
       stuckFor = 0;
       continue;
     }
-    if (error > 0.05) pressed.push('KeyA');
-    else if (error < -0.05) pressed.push('KeyD');
+    // Proportional steering from an on/off key: hold it for a share of the time that grows
+    // with the heading error, as a player taps the key for a gentle correction.
+    const share = Math.min(1, Math.abs(error) / 0.3);
+    state.steerPhase = (state.steerPhase ?? 0) + share;
+    if (Math.abs(error) > 0.02 && state.steerPhase >= 1) {
+      state.steerPhase -= 1;
+      pressed.push(error > 0 ? 'KeyA' : 'KeyD');
+    }
     if (car.speed < wantedSpeed - 0.5) pressed.push('KeyW');
     else if (car.speed > wantedSpeed + 2.5) pressed.push('KeyS');
     await keys(player, pressed);

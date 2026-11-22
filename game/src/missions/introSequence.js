@@ -1,9 +1,9 @@
-// The opening: three camera moves over Solmara with captions that set up Kai's return, then a
+// The opening: three camera moves over Ondaluz with captions that set up Kai's return, then a
 // cut to the Seashell Apartments where play begins. Enter, E, Space or Escape skips it.
 import * as THREE from 'three';
 
 const SHOTS = [
-  { from: [560, 85, 210], to: [470, 60, 70], lookFrom: [120, 25, -20], lookTo: [60, 20, -60], seconds: 5, caption: 'Solmara, on the Atlantic coast. Sun, sea and three hundred days of summer.' },
+  { from: [560, 85, 210], to: [470, 60, 70], lookFrom: [120, 25, -20], lookTo: [60, 20, -60], seconds: 5, caption: 'Ondaluz, on the Atlantic coast. Sun, sea and three hundred days of summer.' },
   { from: [246, 7, 230], to: [246, 5, 90], lookFrom: [238, 3, 60], lookTo: [236, 3, -80], seconds: 4.5, caption: 'Three years ago, Kai Moreno took the fall for a job that went wrong.' },
   { from: [262, 6, 70], to: [252, 3.4, 47], lookFrom: [250, 1.6, 39], lookTo: [250, 1.6, 30], seconds: 4, caption: 'Now he is home. And the docks have a new owner.' },
 ];

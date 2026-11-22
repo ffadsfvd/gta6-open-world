@@ -67,7 +67,8 @@ export class SaveGame {
     game.progress.load(data.progress);
     game.combat.arsenal.load(data.arsenal);
     const hero = game.player.character;
-    hero.health = Math.max(40, data.hero.health ?? 100);
+    // A new day: Kai wakes up at the safehouse fully rested.
+    hero.health = hero.maxHealth;
     hero.armour = data.hero.armour ?? 0;
     game.player.placeAt(findStandingSpot(game.collision, PLACES.safehouse));
     return true;

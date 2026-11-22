@@ -1,5 +1,5 @@
-// The map of Solmara: a grid of avenues and streets between the Vista Alta hills (west and north),
-// Sunwheel Beach on the Atlantic side (east) and the Old Port harbour (south). Districts, the
+// The map of Ondaluz: a grid of avenues and streets between the Vista Alta hills (west and north),
+// Sunwheel Beach on the Atlantic side (east) and the Ironwharf docks (south). Districts, the
 // special blocks, street names and the named places missions and respawns use.
 import { GRID_X, GRID_Z, LOT_INSET, ROAD_HALF, SIDEWALK_LINE, SHORE, PIER } from '../core/config.js';
 
@@ -7,24 +7,24 @@ export const BLOCKS_X = GRID_X.length - 1;
 export const BLOCKS_Z = GRID_Z.length - 1;
 
 export const DISTRICTS = {
-  strand: { name: 'Coral Strand', mapColor: '#f6c3ad', style: 'deco' },
+  strand: { name: 'Carmine Strand', mapColor: '#f6c3ad', style: 'deco' },
   glass: { name: 'Glasswater', mapColor: '#a9bfd6', style: 'tower' },
   mercado: { name: 'Mercado', mapColor: '#f1cf95', style: 'shops' },
-  palmetto: { name: 'Palmetto Heights', mapColor: '#bcd7a1', style: 'houses' },
-  port: { name: 'Old Port', mapColor: '#c4b8aa', style: 'warehouse' },
+  jacaranda: { name: 'Jacaranda Heights', mapColor: '#bcd7a1', style: 'houses' },
+  docks: { name: 'Ironwharf', mapColor: '#c4b8aa', style: 'warehouse' },
   norte: { name: 'Vista Norte', mapColor: '#cfc0e0', style: 'midrise' },
   beach: { name: 'Sunwheel Beach', mapColor: '#f4e0b0' },
   pier: { name: 'Sunwheel Pier', mapColor: '#c79a6e' },
   lighthouse: { name: 'Lighthouse Point', mapColor: '#d9c9a0' },
-  harbor: { name: 'Solmara Harbor', mapColor: '#bdb3a6' },
-  bay: { name: 'Solmara Bay', mapColor: '#3f9fb8' },
+  marina: { name: 'Ondaluz Marina', mapColor: '#bdb3a6' },
+  bay: { name: 'Ondaluz Bay', mapColor: '#3f9fb8' },
   hills: { name: 'Vista Alta Hills', mapColor: '#9bbf7f' },
 };
 
 export function districtOfBlock(bx, bz) {
-  if (bz === 6) return 'port';
+  if (bz === 6) return 'docks';
   if (bx >= 5) return 'strand';
-  if (bx <= 1) return 'palmetto';
+  if (bx <= 1) return 'jacaranda';
   if (bz === 0) return 'norte';
   if (bz <= 3) return 'glass';
   return 'mercado';
@@ -51,13 +51,13 @@ export function specialOfBlock(bx, bz) {
 
 /** North-south avenues, west to east (one per GRID_X line). */
 export const AVENUES = [
-  'Hillcrest Drive', 'Palmetto Avenue', 'Marisol Avenue', 'Bayline Avenue',
-  'Central Avenue', 'Flamingo Avenue', 'Coral Avenue', 'Seabreeze Boulevard',
+  'Hillcrest Drive', 'Jacaranda Avenue', 'Almendro Avenue', 'Bayline Avenue',
+  'Central Avenue', 'Flamingo Avenue', 'Conch Avenue', 'Seabreeze Boulevard',
 ];
 /** East-west streets, north to south (one per GRID_Z line). */
 export const STREETS = [
-  'North Shore Road', 'Lighthouse Street', 'Tower Street', 'Amber Street',
-  'Pier Street', 'Mercado Street', 'Dockside Street', 'Harbor Way',
+  'Northcliff Road', 'Lighthouse Street', 'Tower Street', 'Amber Street',
+  'Pier Street', 'Mercado Street', 'Dockside Street', 'Wharf Way',
 ];
 
 export function blockBounds(bx, bz) {
@@ -107,7 +107,7 @@ export function districtAt(x, z) {
   if (Math.abs(z) <= PIER.halfWidth + 1 && x > SHORE.promenadeEnd && x < PIER.maxX) return 'pier';
   if (x > SHORE.shoreline + 12 || z > SHORE.quayEdge) return 'bay';
   if (x > SHORE.promenadeEnd) return z < -260 ? 'lighthouse' : 'beach';
-  if (z > GRID_Z[GRID_Z.length - 1] + ROAD_HALF) return 'harbor';
+  if (z > GRID_Z[GRID_Z.length - 1] + ROAD_HALF) return 'marina';
   if (x < GRID_X[0] - ROAD_HALF - 6 || z < GRID_Z[0] - ROAD_HALF - 6) return 'hills';
   const bx = Math.max(0, Math.min(BLOCKS_X - 1, Math.floor((x - GRID_X[0]) / 80)));
   const bz = Math.max(0, Math.min(BLOCKS_Z - 1, Math.floor((z - GRID_Z[0]) / 80)));
@@ -132,9 +132,9 @@ export function streetNameAt(x, z) {
 export const PLACES = {
   start: { x: 250, z: 39, yaw: -Math.PI / 2, label: 'Seabreeze promenade' },
   safehouse: { x: 231, z: 40, yaw: Math.PI, label: 'Seashell Apartments' },
-  hospital: { x: 40, z: -169, yaw: Math.PI / 2, label: 'St. Marisol Medical' },
-  policeStation: { x: -169, z: -120, yaw: 0, label: 'Solmara Bay Police' },
-  tacoTruck: { x: -52, z: 30, label: "Lou's Taco Tide" },
+  hospital: { x: 40, z: -169, yaw: Math.PI / 2, label: 'St. Amaro Medical' },
+  policeStation: { x: -169, z: -120, yaw: 0, label: 'Ondaluz Bay Police' },
+  tacoTruck: { x: -52, z: 30, label: "Lou's Taco Ola" },
   garage: { x: -120, z: 166, label: "Juno's Garage" },
   gunShop: { x: 40, z: 89, label: 'Bayside Arms' },
   depot: { x: 40, z: 169, label: 'Pelican Express' },

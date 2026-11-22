@@ -1,12 +1,12 @@
-// Side races: the Harbor Loop around Old Port and Mercado, and the Glasswater Circuit through
+// Side races: the Wharf Loop around Ironwharf and Mercado, and the Glasswater Circuit through
 // downtown. Start one from its flag in any car; win to take the purse.
 import { race } from '../missions/missionSteps.js';
 import { OUTFITS } from '../characters/appearance.js';
 
 export const STREET_RACES = [
   {
-    id: 'harborLoop',
-    title: 'Harbor Loop',
+    id: 'wharfLoop',
+    title: 'Wharf Loop',
     purse: 600,
     start: { x: -280, z: 241.75, yaw: Math.PI / 2 },
     route: [

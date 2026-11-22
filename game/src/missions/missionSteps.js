@@ -36,6 +36,8 @@ export function goTo(place, text, { radius = 5, vehicle = null } = {}) {
   return {
     kind: 'goTo',
     place,
+    radius,
+    requires: vehicle,
     objective: text,
     update(dt, ctx) {
       const player = ctx.game.player.character;
@@ -81,6 +83,7 @@ export function deliver(name, place, text, { radius = 6 } = {}) {
     kind: 'deliver',
     name,
     place,
+    radius,
     objective: text,
     update(dt, ctx) {
       const vehicle = ctx.vars[name];

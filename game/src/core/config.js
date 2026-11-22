@@ -1,4 +1,4 @@
-// Every tuning number of Solmara Heat in one place: city grid, road widths, shoreline,
+// Every tuning number of Ondaluz Undercurrent in one place: city grid, road widths, shoreline,
 // population sizes and the save key. Other modules import these instead of repeating numbers.
 
 /** Road centre lines running north-south (x) and east-west (z), in metres. */
@@ -58,6 +58,7 @@ export const CAMERA_TUNING = {
   mouseSensitivity: 0.0023,
 };
 
-export const SAVE_KEY = 'solmaraHeat.save.v1';
-export const SETTINGS_KEY = 'solmaraHeat.settings.v1';
-export const GAME_TITLE = 'Solmara Heat';
+export const SAVE_KEY = 'ondaluz.save.v1';
+export const SETTINGS_KEY = 'ondaluz.settings.v1';
+export const CITY_NAME = 'Ondaluz';
+export const GAME_TITLE = 'Ondaluz Undercurrent';

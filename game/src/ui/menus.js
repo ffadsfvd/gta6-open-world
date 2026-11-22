@@ -90,7 +90,7 @@ export class Menus {
     const hasSave = game.save.exists();
     this.render(this.title, `
       <div class="title-card">
-        <div class="logo"><span class="logo-top">SOLMARA</span><span class="logo-bottom">HEAT</span></div>
+        <div class="logo"><span class="logo-top">ONDALUZ</span><span class="logo-bottom">UNDERCURRENT</span></div>
         <p class="tagline">Sun, sea and bad decisions on the Atlantic coast</p>
         <div class="menu-list"></div>
         <p class="title-footer">An original open-world crime story · every name, place and tune is invented for this game</p>

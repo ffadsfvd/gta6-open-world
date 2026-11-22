@@ -14,6 +14,7 @@ import { AudioDirector } from '../audio/audioDirector.js';
 import { PopulationManager } from '../ai/populationManager.js';
 import { CharacterManager } from '../characters/characterManager.js';
 import { PlayerController } from '../characters/playerController.js';
+import { PlayerVitals } from '../characters/playerVitals.js';
 import { OUTFITS } from '../characters/appearance.js';
 import { FullMap } from '../ui/fullMap.js';
 import { Menus } from '../ui/menus.js';
@@ -43,7 +44,7 @@ import { Lighting } from '../render/lighting.js';
 import { createTextures } from '../render/textures.js';
 import { createMaterials } from '../render/materials.js';
 import { createSignAtlas } from '../render/signAtlas.js';
-import { SUN_DIRECTION, PLAYER_TUNING, CAMERA_TUNING, GAME_TITLE } from './config.js';
+import { SUN_DIRECTION, PLAYER_TUNING, CAMERA_TUNING, CITY_NAME } from './config.js';
 import { createRandom } from './random.js';
 import { EventBus } from './events.js';
 import { Input } from './input.js';
@@ -104,6 +105,7 @@ export class Game {
     const hero = this.characters.spawn('player', start.x, start.z, OUTFITS.player, { yaw: -Math.PI / 2 });
     hero.health = PLAYER_TUNING.maxHealth;
     this.player = new PlayerController(this, hero);
+    this.vitals = new PlayerVitals(this);
     this.population = new PopulationManager(this, this.rng.fork(11));
     this.effects = new EffectsDirector(this);
     this.combat = new CombatSystem(this);
@@ -152,7 +154,7 @@ export class Game {
       if (e.story) this.notifications.toast(`Story ${this.progress.storyIndex}/${STORYLINE.length} complete`, '', 4);
     });
     events.on('storyComplete', () => {
-      setTimeout(() => this.notifications.banner('THE END', 'Solmara is yours. Keep exploring: races, fares, deliveries and sunshells await.', '', 8), 5000);
+      setTimeout(() => this.notifications.banner('THE END', `${CITY_NAME} is yours. Keep exploring: races, fares, deliveries and sunshells await.`, '', 8), 5000);
     });
   }
 
@@ -198,7 +200,7 @@ export class Game {
     this.hud.show(true);
     this.input.wantsLock = true;
     this.population.reset();
-    this.notifications.toast(`Welcome back to ${GAME_TITLE.split(' ')[0]}.`, '', 3);
+    this.notifications.toast(`Welcome back to ${CITY_NAME}.`, '', 3);
     this.input.requestLock();
   }
 
@@ -279,6 +281,7 @@ export class Game {
         this.missions.update(dt);
         this.activities.update(dt);
         this.fate.update(dt);
+        this.vitals.update(dt);
         this.trackStats(dt);
       }
       this.population.update(dt);

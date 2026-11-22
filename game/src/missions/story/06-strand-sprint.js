@@ -1,4 +1,4 @@
-// Story 6 — Strand Sprint. Dash Ortega, Crane's getaway driver, races Kai around Coral Strand,
+// Story 6 — Strand Sprint. Dash Ortega, Crane's getaway driver, races Kai around Carmine Strand,
 // Lighthouse Street and Glasswater. Win it and Crane's crew loses its swagger.
 import { goTo, race, talk } from '../missionSteps.js';
 import { OUTFITS } from '../../characters/appearance.js';

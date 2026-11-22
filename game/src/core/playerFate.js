@@ -1,5 +1,5 @@
 // What happens when Kai goes down or gets cuffed: FLATLINED (slow motion, drained colour, wake
-// up at St. Marisol Medical and pay the bill) or ARRESTED (hands up, wake up outside police HQ,
+// up at St. Amaro Medical and pay the bill) or ARRESTED (hands up, wake up outside police HQ,
 // pay the fine and lose spare ammo). Either clears the wanted level and fails the mission.
 // The respawn puts Kai on open pavement facing the street, with full control, before anything
 // else in the world is reset.
@@ -40,13 +40,13 @@ export class PlayerFate {
       hero.vehicle.horn = false;
     }
     if (kind === 'wasted') {
-      game.notifications.banner('FLATLINED', 'St. Marisol Medical will patch you up.', 'fail', RESPAWN_AT);
+      game.notifications.banner('FLATLINED', 'St. Amaro Medical will patch you up.', 'fail', RESPAWN_AT);
       game.timeScale = 0.35;
       game.events.emit('playerWasted', {});
     } else {
       if (hero.vehicle) game.player.exitVehicle();
       hero.handsUp = true;
-      game.notifications.banner('ARRESTED', 'The Solmara Bay Police keep your spare ammo.', 'arrest', RESPAWN_AT);
+      game.notifications.banner('ARRESTED', 'The Ondaluz Bay Police keep your spare ammo.', 'arrest', RESPAWN_AT);
     }
     game.screenEffects.drain(true);
   }

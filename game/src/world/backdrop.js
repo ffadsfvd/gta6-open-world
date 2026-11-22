@@ -77,7 +77,7 @@ function buildVillas(buckets, rng) {
     plain.addBox(x, y + 2.2, z, w, 5.4, d, rng.pick(['#fbf3e4', '#f9e0c7', '#ffffff', '#fde2e4']), { yaw });
     plain.addBox(x, y + 5.2, z, w + 0.8, 0.6, d + 0.8, rng.pick(['#b5533c', '#c46a4a', '#e9e3d6']), { yaw });
   }
-  // A radio mast on the highest ridge, Coral FM's.
+  // A radio mast on the highest ridge, Brisa FM's.
   const mx = -520;
   const mz = -470;
   const my = hillHeight(mx, mz);

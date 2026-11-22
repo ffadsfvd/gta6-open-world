@@ -1,5 +1,5 @@
-// Procedural radio: a look-ahead step sequencer playing three original stations (Coral FM's
-// sunset synth-pop, Radio Solaz's tropical groove, Wavelength's lo-fi beach beats) plus the
+// Procedural radio: a look-ahead step sequencer playing three original stations (Brisa FM's
+// dusk synth-pop, Radio Mango's tropical groove, Wavelength's lo-fi beach beats) plus the
 // title theme. Drums, bass, chords and lead are all synthesized.
 
 const NOTE = (name) => {
@@ -10,7 +10,7 @@ const NOTE = (name) => {
 
 export const STATIONS = [
   {
-    name: 'CORAL FM 101.7 — Sunset Synth',
+    name: 'BRISA FM 101.7 — Dusk Synth',
     bpm: 104,
     chords: [['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['C3', 'E3', 'G3'], ['G3', 'B3', 'D4']],
     bass: ['A1', 'F1', 'C2', 'G1'],
@@ -22,7 +22,7 @@ export const STATIONS = [
     pad: 'sawtooth',
   },
   {
-    name: 'RADIO SOLAZ 94.3 — Ritmo Tropical',
+    name: 'RADIO MANGO 94.3 — Ritmo Tropical',
     bpm: 96,
     chords: [['D4', 'F4', 'A4'], ['A#3', 'D4', 'F4'], ['F3', 'A3', 'C4'], ['C4', 'E4', 'G4']],
     bass: ['D2', 'A#1', 'F1', 'C2'],

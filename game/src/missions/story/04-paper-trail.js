@@ -1,7 +1,7 @@
 // Story 4 — Paper Trail. Crane keeps his books on paper. Kai chases the courier van carrying the
 // ledger, wrecks it, grabs the ledger and learns who Crane has on his payroll.
 import { PLACES } from '../../world/cityPlan.js';
-import { call, chase, collect, goTo, talk } from '../missionSteps.js';
+import { call, chase, collect, getInAnyVehicle, goTo, talk } from '../missionSteps.js';
 import { TrafficDriver } from '../../ai/trafficDriver.js';
 import { OUTFITS } from '../../characters/appearance.js';
 import { PedestrianBrain } from '../../ai/pedestrianBrain.js';
@@ -18,22 +18,31 @@ export default {
       ['juno', 'Crane is old-school: he keeps his books on paper. A courier moves the ledger every afternoon.'],
       ['juno', "White van, heading out of Mercado right now. Run it off the road and bring me that ledger."],
     ]),
+    getInAnyVehicle('Get a *car* for the chase. A heavy one rams harder.'),
     call((ctx) => {
       const game = ctx.game;
       const network = game.network;
+      const player = game.player.character;
       const van = ctx.runner.spawnVehicle('van', 0, 0, 0, { paint: '#f8f9fa' });
       const driver = ctx.runner.spawnPerson('npc', 0, 0, OUTFITS.gang);
       driver.vehicle = van;
       van.driver = driver;
       van.engineOn = true;
       const ai = new TrafficDriver(van, network, game.city.signals, game.rng.fork(404));
-      ai.place(network.nodeAt(2, 5).id, network.nodeAt(3, 5).id, 1, 0.35);
-      ai.cruise = 17;
+      // The van pulls out a block or two from wherever Kai is when he has wheels (a retry from
+      // the hospital included), so the chase always starts within reach.
+      const spot = network.randomLaneSpot(game.rng, player, 60, 120) ?? { from: network.nodeAt(2, 5).id, to: network.nodeAt(3, 5).id, lane: 1, t: 0.35 };
+      ai.place(spot.from, spot.to, spot.lane, spot.t);
+      ai.cruise = 15;
+      ai.speedLimit = 18;
       ai.startPanic(9999);
       van.ai = ai;
+      // An old courier van: a few good rams finish it.
+      van.fragility = 2.6;
       ctx.vars.van = van;
+      game.notifications.toast('The courier van is on the move: follow the red arrow!', '', 4);
     }),
-    chase('van', 'Wreck the *courier van*.', { escape: 260 }),
+    chase('van', 'Wreck the *courier van*.', { escape: 320 }),
     call((ctx) => {
       const van = ctx.vars.van;
       const game = ctx.game;

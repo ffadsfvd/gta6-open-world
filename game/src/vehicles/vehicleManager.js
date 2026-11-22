@@ -9,6 +9,8 @@ import { groundHeight } from '../world/terrain.js';
 
 const SUBSTEP = 1 / 60;
 const BURN_SHARE = 0.12;
+/** A burning engine eats this much health a second: about six seconds to bail out. */
+const BURN_RATE = 20;
 
 export class VehicleManager {
   constructor(game) {
@@ -93,8 +95,11 @@ export class VehicleManager {
       return;
     }
     if (vehicle.healthShare < BURN_SHARE) {
+      if (!vehicle.onFire && vehicle.driver && vehicle.driver.kind === 'player') {
+        this.game.events.emit('notice', { text: 'Your car is on fire! Press <kbd>F</kbd> to bail out.' });
+      }
       vehicle.onFire = true;
-      vehicle.health -= 32 * dt;
+      vehicle.health -= BURN_RATE * dt;
       if (vehicle.health <= 0) {
         vehicle.health = 0;
         vehicle.destroyed = true;

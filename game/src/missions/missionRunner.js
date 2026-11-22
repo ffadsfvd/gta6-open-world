@@ -161,7 +161,7 @@ export class MissionRunner {
     this.cooldown = 4;
     if (def.story) {
       this.retry = def;
-      this.retryTimer = 14;
+      this.retryTimer = 30;
     }
   }
 
@@ -218,8 +218,9 @@ export class MissionRunner {
     const game = this.game;
     if (!this.retry || this.retryTimer <= 0) return false;
     if (game.fate.active) return true;
-    this.retryTimer -= dt;
+    // The offer waits while the police are busy with Kai, and counts down once they are not.
     if (game.wanted.level > 0) return false;
+    this.retryTimer -= dt;
     game.hud.hint(`Mission failed: <b>${this.retry.title}</b><br>Press <kbd>E</kbd> to retry.`, 0.2);
     if (game.input.wasPressed('interact')) {
       const def = this.retry;

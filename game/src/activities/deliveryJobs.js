@@ -1,14 +1,14 @@
-// Pelican Express: take a company van from the Old Port depot and drop three parcels across
+// Pelican Express: take a company van from the Ironwharf depot and drop three parcels across
 // town before the clock runs out.
 import { call, deliver, enterVehicle, timeLimit } from '../missions/missionSteps.js';
 import { PLACES } from '../world/cityPlan.js';
 
 const ADDRESSES = [
   { x: 120, z: 9, label: 'Pier Street' },
-  { x: -169, z: -40, label: 'Marisol Avenue' },
+  { x: -169, z: -40, label: 'Almendro Avenue' },
   { x: 9, z: -120, label: 'Central Avenue' },
   { x: 231, z: 160, label: 'Seabreeze Boulevard' },
-  { x: -280, z: 89, label: 'Palmetto Heights' },
+  { x: -280, z: 89, label: 'Jacaranda Heights' },
   { x: 89, z: -280, label: 'Vista Norte' },
   { x: -40, z: 151, label: 'Mercado Street' },
 ];

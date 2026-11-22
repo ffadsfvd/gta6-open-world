@@ -1,9 +1,9 @@
 // Explosions: damage and knock-back falling off with distance, cars caught in the blast take
 // damage too (so wrecks can chain), and the street panics.
 
-export function explode(game, x, y, z, { radius = 8, damage = 120, source = null, fromVehicle = false } = {}) {
+export function explode(game, x, y, z, { radius = 8, damage = 120, source = null, fromVehicle = false, spare = null } = {}) {
   for (const character of game.characters.list) {
-    if (!character.active) continue;
+    if (!character.active || character === spare) continue;
     const dx = character.x - x;
     const dz = character.z - z;
     const distance = Math.hypot(dx, dz);
@@ -24,7 +24,7 @@ export function explode(game, x, y, z, { radius = 8, damage = 120, source = null
     const distance = Math.hypot(vehicle.x - x, vehicle.z - z);
     if (distance > radius * 1.2 || distance < 0.5) continue;
     const share = 1 - distance / (radius * 1.2);
-    vehicle.damage(damage * share * 3.5, source);
+    vehicle.damage(damage * share * 2.6, source);
     const push = share * 7;
     vehicle.vx += ((vehicle.x - x) / distance) * push;
     vehicle.vz += ((vehicle.z - z) / distance) * push;

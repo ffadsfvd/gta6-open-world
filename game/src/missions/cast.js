@@ -11,7 +11,7 @@ export const CAST = {
   crane: { name: 'Silas Crane', color: '#e9c46a', outfit: OUTFITS.crane, hair: 'short', extra: 'shades' },
   dash: { name: 'Dash Ortega', color: '#ffbe0b', outfit: OUTFITS.dash, hair: 'short', extra: 'headband' },
   thug: { name: "Crane's Crew", color: '#e63946', outfit: OUTFITS.gang, hair: 'short', extra: 'headband' },
-  dispatch: { name: 'SBPD Dispatch', color: '#3a86ff', outfit: OUTFITS.police, hair: 'short', extra: 'headset' },
+  dispatch: { name: 'OBPD Dispatch', color: '#3a86ff', outfit: OUTFITS.police, hair: 'short', extra: 'headset' },
   fare: { name: 'Passenger', color: '#ff9f1c', outfit: OUTFITS.fare, hair: 'bob', extra: 'none' },
 };
 

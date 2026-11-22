@@ -1,5 +1,5 @@
 // Ground height anywhere on the map: roads at 0, raised sidewalks and lots, the pier deck,
-// the beach sloping into the sea and the deep harbour beyond the Old Port quay.
+// the beach sloping into the sea and the deep water beyond the Ironwharf quay.
 import { CURB_HEIGHT, GRID_X, GRID_Z, PIER, ROAD_HALF, SHORE, WATER_LEVEL } from '../core/config.js';
 import { roadLineAt } from './cityPlan.js';
 
@@ -7,7 +7,7 @@ const EAST_EDGE = GRID_X[GRID_X.length - 1] + ROAD_HALF;
 const LAND_MIN_X = GRID_X[0] - ROAD_HALF;
 const LAND_MIN_Z = GRID_Z[0] - ROAD_HALF;
 const PIER_RAMP = 8;
-const HARBOUR_FLOOR = -6;
+const SEABED_FLOOR = -6;
 
 /** Sand height across the beach, falling below the sea past the shoreline. */
 export function beachHeight(x) {
@@ -26,7 +26,7 @@ export function groundHeight(x, z) {
     return CURB_HEIGHT + (PIER.deck - CURB_HEIGHT) * t;
   }
   if (z > SHORE.quayStart) {
-    if (z > SHORE.quayEdge || x > SHORE.promenadeEnd) return HARBOUR_FLOOR;
+    if (z > SHORE.quayEdge || x > SHORE.promenadeEnd) return SEABED_FLOOR;
     return CURB_HEIGHT;
   }
   if (x > EAST_EDGE) {

@@ -18,7 +18,8 @@ export class CombatSystem {
       const v = e.vehicle;
       const driver = v.driver;
       if (driver) {
-        // Whoever is inside a car that blows up is thrown out, badly hurt.
+        // Whoever is inside a car that blows up is thrown out, badly hurt (Kai survives it from
+        // good health: the fire gave him seconds to bail out).
         if (driver.kind === 'player') game.player.exitVehicle();
         else {
           driver.vehicle = null;
@@ -28,11 +29,11 @@ export class CombatSystem {
           driver.x = side.x;
           driver.z = side.z;
         }
-        const killed = driver.takeDamage(driver.kind === 'player' ? 85 : 200, v.lastImpactBy);
+        const killed = driver.takeDamage(driver.kind === 'player' ? 60 : 200, v.lastImpactBy);
         driver.knockDown(-Math.cos(v.yaw) * 5, Math.sin(v.yaw) * 5, 3, 5);
         if (killed) game.events.emit('characterKilled', { victim: driver, attacker: v.lastImpactBy, weapon: 'explosion' });
       }
-      explode(game, v.x, v.y + 0.6, v.z, { radius: 8, damage: 110, source: v.lastImpactBy, fromVehicle: true });
+      explode(game, v.x, v.y + 0.6, v.z, { radius: 8, damage: 110, source: v.lastImpactBy, fromVehicle: true, spare: driver });
     });
   }
 
@@ -84,6 +85,7 @@ export class CombatSystem {
     const hero = game.player.character;
     const camera = game.camera;
     const dir = camera.getWorldDirection(this.tmp ?? (this.tmp = camera.position.clone()));
+    if (hero.aimYaw !== null) this.assistAim(camera.position, dir, spec.range);
     const spread = spec.spread * (hero.aimYaw !== null ? 1 : 2.2) * (Math.hypot(hero.vx, hero.vz) > 1 ? 1.6 : 1);
     dir.x += (this.rng.next() - 0.5) * 2 * spread;
     dir.y += (this.rng.next() - 0.5) * 2 * spread;
@@ -110,6 +112,38 @@ export class CombatSystem {
     return { x: character.x + fx * 0.75 - fz * 0.28, y: character.y + 1.42, z: character.z + fz * 0.75 + fx * 0.28 };
   }
 
+  /** True for someone it makes sense to help the player hit: armed foes and police after him. */
+  isFoe(character) {
+    if (character.kind === 'gang') return true;
+    if (character.kind === 'police') return this.game.wanted.level > 0;
+    return Boolean(character.brain && character.brain.mode === 'fight');
+  }
+
+  /**
+   * Soft aim assist while aiming down the sights: a shot that would pass within a few degrees
+   * of a foe's chest bends onto it, as console-style lock-on does. Mouse aim still decides.
+   */
+  assistAim(origin, dir, range) {
+    const hero = this.game.player.character;
+    let best = null;
+    let bestAngle = 0.075;
+    for (const character of this.game.characters.list) {
+      if (!character.active || character === hero || character.vehicle || !character.alive || !this.isFoe(character)) continue;
+      const dx = character.x - origin.x;
+      const dy = character.y + 1.2 - origin.y;
+      const dz = character.z - origin.z;
+      const distance = Math.hypot(dx, dy, dz);
+      if (distance > range || distance < 1) continue;
+      const along = (dx * dir.x + dy * dir.y + dz * dir.z) / distance;
+      const angle = Math.acos(Math.min(1, along));
+      if (angle < bestAngle && !this.game.collision.segmentBlocked(hero.x, hero.z, character.x, character.z, 1.5)) {
+        bestAngle = angle;
+        best = { dx, dy, dz, distance };
+      }
+    }
+    if (best) dir.set(best.dx / best.distance, best.dy / best.distance, best.dz / best.distance);
+  }
+
   /** An NPC fires at a target character; accuracy falls with distance and target speed. */
   fireNpcShot(shooter, target, accuracy = 0.6, weapon = 'pistol') {
     const game = this.game;
@@ -133,7 +167,11 @@ export class CombatSystem {
     shooter.recoil = 1;
     shooter.weapon = weapon;
     const hit = castBullet(game, ox, oy, oz, dx, dy, dz, spec.range, shooter);
-    this.resolveShot(shooter, hit, spec.damage * (shooter.kind === 'police' ? 0.55 : 0.5), { x: dx, y: dy, z: dz }, this.muzzleOf(shooter, shooter.aimYaw));
+    // NPC bullets hurt less than Kai's, so a fight is something a player can win: police more
+    // the higher the stars, Crane's crew a little less.
+    const level = game.wanted.level;
+    const share = shooter.kind === 'police' ? 0.22 + level * 0.04 : 0.34;
+    this.resolveShot(shooter, hit, spec.damage * share, { x: dx, y: dy, z: dz }, this.muzzleOf(shooter, shooter.aimYaw));
   }
 
   resolveShot(shooter, hit, damage, dir, muzzle) {
@@ -158,6 +196,8 @@ export class CombatSystem {
       victim.vx += dir.x * 1.5;
       victim.vz += dir.z * 1.5;
     }
+    // Hit reaction: whoever Kai hurts flinches and loses the initiative for a moment.
+    if (!killed && attacker && attacker.kind === 'player' && victim.brain && victim.brain.stagger) victim.brain.stagger(kind === 'melee' ? 0.7 : 0.45);
     if (killed && dir) {
       victim.vx = dir.x * 2.5;
       victim.vz = dir.z * 2.5;
@@ -188,7 +228,8 @@ export class CombatSystem {
     }
     game.events.emit('punch', { attacker, target: best, x: attacker.x, z: attacker.z });
     if (!best) return;
-    const damage = WEAPONS.fists.damage + this.rng.next() * 5;
+    // Street thugs and officers hit softer than Kai, or two of them would floor him in seconds.
+    const damage = (WEAPONS.fists.damage + this.rng.next() * 5) * (attacker.kind === 'player' ? 1 : 0.6);
     best.combo = (best.comboTime ?? 0) > game.time - 1.2 ? (best.combo ?? 0) + 1 : 1;
     best.comboTime = game.time;
     const killed = this.hurt(best, damage, attacker, 'melee', { x: fx, y: 0, z: fz });

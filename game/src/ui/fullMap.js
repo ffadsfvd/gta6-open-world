@@ -1,8 +1,9 @@
-// The full-screen map (M): the whole of Solmara with district names, landmarks, every contact,
+// The full-screen map (M): the whole of Ondaluz with district names, landmarks, every contact,
 // activity and mission blip, police and the search area, the GPS route and Kai's position,
 // framed like a tourist map with a legend.
 import { MAP_SCALE } from './mapPainter.js';
 import { DISTRICTS } from '../world/cityPlan.js';
+import { CITY_NAME } from '../core/config.js';
 import { collectBlips, gpsRoute } from './blips.js';
 import { drawBlip } from './minimap.js';
 
@@ -11,7 +12,7 @@ const LANDMARKS = [
   { x: 300, z: -352, text: 'Lighthouse Point' },
   { x: -40, z: -102, text: 'Glasswater One' },
   { x: -40, z: 58, text: 'Mercado Plaza' },
-  { x: -280, z: -102, text: 'Palmetto Park' },
+  { x: -280, z: -102, text: 'Jacaranda Park' },
   { x: -90, z: 330, text: 'Cargo Docks' },
   { x: 420, z: -200, text: 'Atlantic Ocean' },
   { x: -380, z: -380, text: 'Vista Alta Hills' },
@@ -32,7 +33,7 @@ export class FullMap {
     this.canvas = document.getElementById('full-map-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.legend = document.getElementById('map-legend');
-    this.legend.innerHTML = `<h3>SOLMARA</h3>${LEGEND.map(([color, text]) => `<p><i style="background:${color}"></i>${text}</p>`).join('')}<p class="keys"><kbd>M</kbd> close</p>`;
+    this.legend.innerHTML = `<h3>${CITY_NAME.toUpperCase()}</h3>${LEGEND.map(([color, text]) => `<p><i style="background:${color}"></i>${text}</p>`).join('')}<p class="keys"><kbd>M</kbd> close</p>`;
     this.labels = this.districtLabels();
   }
 
