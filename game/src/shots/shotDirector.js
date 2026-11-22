@@ -64,18 +64,21 @@ function coverScene(game) {
     unit.vehicle.vx = -22;
   }
   // Oncoming traffic pulls over on the eastbound side; a car that lost a fight burns at the curb.
-  const paints = ['#f1faee', '#2a9d8f', '#ffd166', '#3a86ff'];
-  for (const [ahead, lane] of [[-52, 1], [-85, 0], [34, 1], [62, 0]]) {
+  const paints = ['#f1faee', '#2a9d8f', '#ffd166'];
+  for (const [ahead, lane] of [[-16, 1], [44, 0], [78, 1]]) {
     const vehicle = game.population.spawnTraffic({ x: car.x, z: car.z }, 0, 1e9);
     if (!vehicle) continue;
     vehicle.paint.set(paints.pop());
     vehicle.ai.place(network.nodeAt(5, 4).id, network.nodeAt(6, 4).id, lane, Math.min(0.92, Math.max(0.05, (car.x + ahead - 91) / 58)));
   }
-  const wreck = game.vehicles.spawn('sedan', car.x + 30, 8.6, 0.5, { role: 'parked', paint: '#5a5f66' });
+  // A car that lost a fight with the cruisers burns at the curb, right where the chase passes.
+  const wreck = game.vehicles.spawn('sedan', car.x - 30, 6.4, 0.55, { role: 'mission', paint: '#5a5f66' });
   wreck.damage(wreck.health * 0.885);
   for (let index = 0; index < 22; index += 1) game.population.spawnWalker({ x: car.x - 8, z: car.z }, 0, 40);
   game.followCamera.view = 0;
   game.followCamera.lookBack = true;
+  // The camera has to be on the scene while it plays: effects only run near the camera.
+  settleCamera(game);
   game.simulate(1.5);
   // The helicopter hangs low over the street behind the cruisers, its beam on Kai.
   game.helicopter.placeAt(car.x + 42, car.z - 5, car.x + 1, car.z, 17);
@@ -209,6 +212,7 @@ function raceScene(game) {
   for (let index = 0; index < 18; index += 1) game.population.spawnWalker({ x: 236, z: -190 }, 0, 45);
   game.followCamera.view = 0;
   game.followCamera.lookBack = false;
+  settleCamera(game);
   game.simulate(1.6);
 }
 

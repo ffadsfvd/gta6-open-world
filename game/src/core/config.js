@@ -29,9 +29,9 @@ export const WORLD_BOUNDS = { minX: -345, maxX: 405, minZ: -345, maxZ: 296 };
 export const SUN_DIRECTION = { x: -0.4, y: 0.66, z: 0.64 };
 
 export const POPULATION = {
-  traffic: 26,
-  pedestrians: 46,
-  parked: 18,
+  traffic: 30,
+  pedestrians: 58,
+  parked: 20,
   spawnMin: 55,
   spawnMax: 170,
   despawn: 210,
