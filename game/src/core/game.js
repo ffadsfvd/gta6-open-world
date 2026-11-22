@@ -89,8 +89,9 @@ export class Game {
       collision: this.collision, events: this.events, rng: createRandom(this.seed),
     });
     this.input = new Input(this.canvas);
+    // Losing the mouse while playing (Esc, Alt+Tab) pauses; the shop lets it go on purpose.
     this.input.onLockLost = () => {
-      if (this.state === 'playing') this.pause();
+      if (this.state === 'playing' && !this.shop.isOpen) this.pause();
     };
     this.followCamera = new FollowCamera(camera, this.collision);
     this.titleCamera = new TitleCamera();
@@ -197,8 +198,6 @@ export class Game {
     this.hud.show(true);
     this.input.wantsLock = true;
     this.population.reset();
-    this.player.character.yaw = Math.PI / 2;
-    this.followCamera.snapBehind(Math.PI / 2);
     this.notifications.toast(`Welcome back to ${GAME_TITLE.split(' ')[0]}.`, '', 3);
     this.input.requestLock();
   }
@@ -207,6 +206,7 @@ export class Game {
     if (this.state !== 'playing') return;
     this.state = 'paused';
     this.input.releaseLock();
+    this.input.releaseAll();
     this.menus.showPause();
   }
 
@@ -215,13 +215,17 @@ export class Game {
     this.fullMap.show(false);
     this.hud.show(true);
     this.state = 'playing';
-    this.input.requestLock();
+    // Esc is Chrome's own "let go of the mouse" key: capturing again on it would be undone at
+    // once, so after Esc the player clicks to capture (the HUD says so).
+    if (!this.input.pressed.has('Escape')) this.input.requestLock();
   }
 
   openMap() {
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing' && this.state !== 'paused') return;
+    this.menus.hidePause();
     this.state = 'map';
     this.input.releaseLock();
+    this.input.releaseAll();
     this.hud.show(false);
     this.fullMap.show(true);
   }
@@ -234,6 +238,15 @@ export class Game {
 
   handleGlobalInput() {
     const input = this.input;
+    const before = this.state;
+    const shopWasOpen = this.shop.isOpen;
+    this.routeGlobalInput(input);
+    // A key that opened or closed a menu has done its job: it must not also skip a line of
+    // dialogue, start a mission or reopen the shop in the same frame.
+    if (this.state !== before || this.shop.isOpen !== shopWasOpen) input.consumePresses();
+  }
+
+  routeGlobalInput(input) {
     if (this.state === 'title' || this.state === 'paused') {
       this.menus.handleInput(input);
       return;

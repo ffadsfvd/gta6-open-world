@@ -2,6 +2,7 @@
 // ammo, health and armour, and where Kai was standing. Continue on the title screen loads it.
 import { SAVE_KEY } from '../core/config.js';
 import { PLACES } from '../world/cityPlan.js';
+import { findStandingSpot } from '../world/standingSpots.js';
 
 const VERSION = 1;
 
@@ -68,9 +69,7 @@ export class SaveGame {
     const hero = game.player.character;
     hero.health = Math.max(40, data.hero.health ?? 100);
     hero.armour = data.hero.armour ?? 0;
-    const spot = PLACES.safehouse;
-    hero.x = spot.x;
-    hero.z = spot.z;
+    game.player.placeAt(findStandingSpot(game.collision, PLACES.safehouse));
     return true;
   }
 

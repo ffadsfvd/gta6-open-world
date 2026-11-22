@@ -1,5 +1,6 @@
 // Turns keyboard and mouse into the player's actions: run, sprint, jump and aim relative to
 // the camera; enter any car with F (pulling the driver out), drive it, bail out at speed.
+// While the player drives a car, the car belongs to the keyboard: no AI may steer it.
 import { PLAYER_TUNING, CAMERA_TUNING } from '../core/config.js';
 import { approach } from '../core/mathUtils.js';
 import { PedestrianBrain } from '../ai/pedestrianBrain.js';
@@ -7,7 +8,6 @@ import { nearestCorner } from '../ai/sidewalkPaths.js';
 import { groundHeight } from '../world/terrain.js';
 
 const ENTER_RANGE = 4.5;
-const LOOK_KEYS_SPEED = 2.2;
 
 export class PlayerController {
   constructor(game, character) {
@@ -27,9 +27,6 @@ export class PlayerController {
     const mouse = input.takeMouse();
     if (!this.enabled) return;
     camera.look(mouse.x, mouse.y, this.sensitivity, this.invertY);
-    const turn = input.axis('lookLeft', 'lookRight');
-    const tilt = input.axis('lookUp', 'lookDown');
-    if (turn !== 0 || tilt !== 0) camera.look(turn * LOOK_KEYS_SPEED * dt / this.sensitivity, tilt * LOOK_KEYS_SPEED * 0.5 * dt / this.sensitivity, this.sensitivity);
     if (this.character.vehicle) this.updateDriving(dt);
     else this.updateOnFoot(dt);
   }
@@ -76,8 +73,9 @@ export class PlayerController {
     }
     const victim = vehicle.driver;
     if (victim) this.ejectDriver(vehicle, victim);
+    const parked = vehicle.role === 'parked';
     this.enterVehicle(vehicle);
-    game.events.emit('vehicleEntered', { vehicle, jacked: Boolean(victim), victim, parked: vehicle.role === 'parked' });
+    game.events.emit('vehicleEntered', { vehicle, jacked: Boolean(victim), victim, parked });
     return true;
   }
 
@@ -91,7 +89,7 @@ export class PlayerController {
     victim.x = side.x;
     victim.z = side.z;
     victim.y = groundHeight(side.x, side.z);
-    victim.kind = vehicle.role === 'police' ? 'police' : 'pedestrian';
+    victim.kind = vehicle.type === 'police' ? 'police' : 'pedestrian';
     victim.knockDown(-Math.cos(vehicle.yaw) * 3, Math.sin(vehicle.yaw) * 3, 1.4, 1.5);
     const corner = nearestCorner(victim.x, victim.z);
     victim.brain = new PedestrianBrain(victim, game.rng.fork(victim.id), { ...corner, corner: corner.corner });
@@ -102,12 +100,14 @@ export class PlayerController {
   enterVehicle(vehicle) {
     const character = this.character;
     character.vehicle = vehicle;
+    character.brain = null;
     character.setMove(0, 0, 0);
     character.aimYaw = null;
     character.handsUp = false;
     vehicle.driver = character;
     vehicle.ai = null;
     vehicle.engineOn = true;
+    vehicle.clearControls();
     if (vehicle.role !== 'mission') vehicle.role = 'player';
     vehicle.siren = false;
     this.steer = 0;
@@ -133,6 +133,8 @@ export class PlayerController {
     character.yaw = vehicle.yaw;
     character.vx = vehicle.vx * 0.6;
     character.vz = vehicle.vz * 0.6;
+    this.steer = 0;
+    game.followCamera.lookBack = false;
     if (speed > 9) {
       character.knockDown(vehicle.vx * 0.7, vehicle.vz * 0.7, 1.5, 2);
       character.takeDamage(Math.min(25, speed * 0.9));
@@ -140,13 +142,49 @@ export class PlayerController {
     game.events.emit('vehicleExited', { vehicle, bailed: speed > 9 });
   }
 
+  /**
+   * Stands Kai at a spot ({ x, z, yaw }) as if he had just walked there: on his feet, still,
+   * nothing left over from a fall, a fight or a car, and the camera behind him.
+   */
+  placeAt(spot) {
+    const character = this.character;
+    if (character.vehicle) this.exitVehicle();
+    character.x = spot.x;
+    character.z = spot.z;
+    character.y = groundHeight(spot.x, spot.z);
+    character.yaw = spot.yaw;
+    character.vx = 0;
+    character.vy = 0;
+    character.vz = 0;
+    character.onGround = true;
+    character.swimming = false;
+    character.state = 'idle';
+    character.downTimer = 0;
+    character.handsUp = false;
+    character.aimYaw = null;
+    character.brain = null;
+    character.punchTimer = 0;
+    character.recoil = 0;
+    character.anim.down = 0;
+    character.anim.airborne = 0;
+    character.setMove(0, 0, 0);
+    this.steer = 0;
+    this.aiming = false;
+    this.game.followCamera.lookBack = false;
+    this.game.followCamera.snapBehind(spot.yaw, 0.18);
+  }
+
   updateDriving(dt) {
     const game = this.game;
     const input = game.input;
     const vehicle = this.character.vehicle;
     const controls = vehicle.controls;
+    const speed = Math.abs(vehicle.forwardSpeed);
     const wanted = input.axis('left', 'right');
-    this.steer = approach(this.steer, wanted, dt * (wanted === 0 ? 6 : 3.6));
+    // Keyboard steering eases in (more gently the faster the car goes) and snaps back to centre.
+    const turningBack = wanted !== 0 && this.steer !== 0 && Math.sign(wanted) !== Math.sign(this.steer);
+    const rate = wanted === 0 || turningBack ? 9 : 4.2 - Math.min(speed, 30) * 0.06;
+    this.steer = approach(this.steer, wanted, dt * rate);
     controls.steer = this.steer;
     controls.throttle = input.isDown('forward') ? 1 : 0;
     controls.brake = input.isDown('back') ? 1 : 0;
@@ -154,7 +192,8 @@ export class PlayerController {
     vehicle.horn = input.isDown('horn');
     game.followCamera.lookBack = input.isDown('lookBack');
     if (input.wasPressed('cameraMode')) game.followCamera.cycleView();
+    if (input.wasPressed('radio')) game.audio.nextStation();
     if (input.wasPressed('enterVehicle') && !vehicle.sinking) this.exitVehicle();
-    if (vehicle.destroyed && vehicle.sinking > 0) this.exitVehicle();
+    else if (vehicle.destroyed && vehicle.sinking > 0) this.exitVehicle();
   }
 }

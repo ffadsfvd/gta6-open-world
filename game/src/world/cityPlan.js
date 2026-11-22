@@ -128,12 +128,12 @@ export function streetNameAt(x, z) {
   return '';
 }
 
-/** Named spots: mission givers, drop-offs, respawns. */
+/** Named spots: mission givers, drop-offs, respawns (yaw: the way Kai faces when put there). */
 export const PLACES = {
-  start: { x: 250, z: 39, label: 'Seabreeze promenade' },
-  safehouse: { x: 231, z: 40, label: 'Seashell Apartments' },
-  hospital: { x: 40, z: -169, label: 'St. Marisol Medical' },
-  policeStation: { x: -169, z: -120, label: 'Solmara Bay Police' },
+  start: { x: 250, z: 39, yaw: -Math.PI / 2, label: 'Seabreeze promenade' },
+  safehouse: { x: 231, z: 40, yaw: Math.PI, label: 'Seashell Apartments' },
+  hospital: { x: 40, z: -169, yaw: Math.PI / 2, label: 'St. Marisol Medical' },
+  policeStation: { x: -169, z: -120, yaw: 0, label: 'Solmara Bay Police' },
   tacoTruck: { x: -52, z: 30, label: "Lou's Taco Tide" },
   garage: { x: -120, z: 166, label: "Juno's Garage" },
   gunShop: { x: 40, z: 89, label: 'Bayside Arms' },

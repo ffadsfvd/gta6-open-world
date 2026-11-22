@@ -141,6 +141,8 @@ export function chase(name, text, { escape = 240, stopShare = 0.3 } = {}) {
       if (!target) return true;
       const player = ctx.game.player.character;
       if (target.destroyed || (target.healthShare < stopShare && target.speed < 3)) return true;
+      // Pulling the driver out and taking the car ends the chase too.
+      if (target.driver === player) return true;
       if (Math.hypot(target.x - player.x, target.z - player.z) > escape) return 'fail:The target got away.';
       return false;
     },

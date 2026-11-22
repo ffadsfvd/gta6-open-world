@@ -39,7 +39,9 @@ export class FollowCamera {
     if (dx === 0 && dy === 0) return;
     this.yaw = wrapAngle(this.yaw - dx * sensitivity);
     this.pitch = clamp(this.pitch + dy * sensitivity * (invertY ? -1 : 1), -0.45, 1.25);
-    this.freeLook = 1.8;
+    // A hand resting on the mouse nudges it a pixel or two: that is not looking around, so
+    // the chase camera keeps swinging back behind the car.
+    if (Math.abs(dx) + Math.abs(dy) > 3) this.freeLook = 1.4;
   }
 
   shake(amount) {
@@ -47,9 +49,10 @@ export class FollowCamera {
   }
 
   /** Points the camera behind a heading at once (after respawn or entering a car). */
-  snapBehind(yaw) {
+  snapBehind(yaw, pitch = null) {
     this.yaw = yaw;
     this.freeLook = 0;
+    if (pitch !== null) this.pitch = pitch;
   }
 
   update(dt, focus) {
@@ -83,12 +86,12 @@ export class FollowCamera {
     camera.lookAt(this.target);
   }
 
-  /** Pulls the camera in front of any wall between it and the target. */
-  avoidWalls(wantedDistance, dirX, dirY, dirZ) {
+  /** Pulls the camera in front of any wall between it and the target; eases back out after. */
+  avoidWalls(wantedDistance, dirX, dirY, dirZ, frameSeconds) {
     const hit = this.collision.raycast(this.target.x, this.target.y, this.target.z, dirX, dirY, dirZ, wantedDistance + 0.4, 1.6);
     const limit = hit ? Math.max(0.9, hit.distance - 0.45) : wantedDistance;
     if (limit < this.distance) this.distance = limit;
-    else this.distance = damp(this.distance, limit, 3.5, 1 / 60);
+    else this.distance = damp(this.distance, limit, 3.5, frameSeconds);
   }
 
   place(dirX, dirY, dirZ) {
@@ -111,7 +114,7 @@ export class FollowCamera {
     const dirX = -fx * cosPitch;
     const dirY = Math.sin(this.pitch);
     const dirZ = -fz * cosPitch;
-    this.avoidWalls(wanted, dirX, dirY, dirZ);
+    this.avoidWalls(wanted, dirX, dirY, dirZ, dt);
     this.place(dirX, dirY, dirZ);
     // Look a little past the target so the horizon sits well.
     this.target.x += fx * 2;
@@ -160,7 +163,7 @@ export class FollowCamera {
     const dirX = -fx * cosPitch;
     const dirY = Math.sin(this.pitch);
     const dirZ = -fz * cosPitch;
-    this.avoidWalls(wanted, dirX, dirY, dirZ);
+    this.avoidWalls(wanted, dirX, dirY, dirZ, dt);
     this.place(dirX, dirY, dirZ);
     this.target.x += fx * (3 + lead);
     this.target.z += fz * (3 + lead);

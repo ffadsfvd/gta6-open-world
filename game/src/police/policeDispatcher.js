@@ -25,6 +25,15 @@ export class PoliceDispatcher {
       if (e.level > 0 && e.previous === 0) this.spawnTimer = 1.2;
       if (e.level === 0) this.standDown();
     });
+    // A cruiser the player steals stops being a police unit at once.
+    game.events.on('vehicleEntered', (e) => {
+      this.units = this.units.filter((unit) => unit.vehicle !== e.vehicle);
+    });
+  }
+
+  /** True for the car the player is sitting in: it is never commandeered by the police. */
+  isPlayerCar(vehicle) {
+    return Boolean(vehicle.driver && vehicle.driver.kind === 'player');
   }
 
   makeOfficer(x, z) {
@@ -70,7 +79,7 @@ export class PoliceDispatcher {
   enlistPatrols() {
     const player = this.game.player.character;
     for (const vehicle of this.game.vehicles.list) {
-      if (vehicle.type !== 'police' || !vehicle.driver || vehicle.destroyed) continue;
+      if (vehicle.type !== 'police' || !vehicle.driver || vehicle.destroyed || this.isPlayerCar(vehicle)) continue;
       if (vehicle.ai instanceof PoliceDriver) continue;
       if (Math.hypot(vehicle.x - player.x, vehicle.z - player.z) > 160) continue;
       vehicle.ai = new PoliceDriver(vehicle, this.rng.fork(vehicle.id));
@@ -129,7 +138,7 @@ export class PoliceDispatcher {
 
   /** Officers climb out and continue on foot. */
   deploy(unit, back = 2) {
-    if (unit.deployed) return;
+    if (unit.deployed || this.isPlayerCar(unit.vehicle)) return;
     unit.deployed = true;
     const vehicle = unit.vehicle;
     const driver = vehicle.driver;
@@ -159,6 +168,7 @@ export class PoliceDispatcher {
     const game = this.game;
     for (const unit of this.units) {
       const vehicle = unit.vehicle;
+      if (this.isPlayerCar(vehicle)) continue;
       vehicle.siren = false;
       if (vehicle.driver && !vehicle.destroyed) {
         const spot = game.network.laneFromPosition(vehicle.x, vehicle.z, vehicle.yaw);
@@ -241,7 +251,7 @@ export class PoliceDispatcher {
   keepPatrols() {
     const game = this.game;
     const player = game.player.character;
-    const patrols = game.vehicles.list.filter((v) => v.type === 'police' && v.active && v.driver && !v.destroyed);
+    const patrols = game.vehicles.list.filter((v) => v.type === 'police' && v.active && v.driver && !v.destroyed && !this.isPlayerCar(v));
     for (const patrol of patrols) {
       if (Math.hypot(patrol.x - player.x, patrol.z - player.z) > 230) game.vehicles.remove(patrol);
     }

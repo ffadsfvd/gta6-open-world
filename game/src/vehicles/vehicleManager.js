@@ -51,7 +51,11 @@ export class VehicleManager {
 
   update(dt) {
     const game = this.game;
+    const playerDriving = game.player.enabled;
     for (const vehicle of this.list) {
+      // The car the player sits in answers to the keyboard alone; an AI is only allowed to
+      // drive it while the player's controls are off (a staged screenshot scene).
+      if (vehicle.ai && vehicle.driver && vehicle.driver.kind === 'player' && playerDriving) vehicle.ai = null;
       if (vehicle.ai) vehicle.ai.update(dt, game);
       else if (!vehicle.driver) {
         vehicle.clearControls();

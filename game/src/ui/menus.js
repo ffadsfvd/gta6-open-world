@@ -6,7 +6,7 @@ import { STAT_LABELS } from '../progression/progress.js';
 import { formatMoney } from '../core/mathUtils.js';
 
 const CONTROLS = [
-  ['W A S D', 'Move / drive'], ['Mouse', 'Look around (click to capture)'], ['Shift', 'Sprint'],
+  ['W A S D / arrows', 'Move / drive'], ['Mouse', 'Look around (click to capture)'], ['Shift', 'Sprint'],
   ['Space', 'Jump / handbrake'], ['F', 'Enter, exit or steal a vehicle'], ['Right mouse', 'Aim'],
   ['Left mouse', 'Shoot / punch'], ['Q · 1 2 3 · wheel', 'Switch weapon'], ['R', 'Reload'],
   ['E', 'Talk, start missions, shop'], ['H', 'Horn'], ['V', 'Car camera view'], ['C', 'Look behind'],
@@ -41,7 +41,11 @@ export class Menus {
         const element = document.createElement('button');
         element.className = 'menu-button';
         element.disabled = item.disabled;
+        // Menus are driven by the game's own keys: a focused button would also answer
+        // Space and Enter by itself and fire twice.
+        element.tabIndex = -1;
         element.innerHTML = `<span>${item.label}</span>${item.detail ? `<small>${item.detail}</small>` : ''}`;
+        element.addEventListener('mousedown', (event) => event.preventDefault());
         element.addEventListener('mouseenter', () => this.setFocus(index));
         element.addEventListener('click', () => this.choose(index));
         list.appendChild(element);
@@ -66,7 +70,7 @@ export class Menus {
 
   handleInput(input) {
     if (!this.active) return;
-    const step = (input.wasPressed('lookDown') || input.wasPressed('back') ? 1 : 0) - (input.wasPressed('lookUp') || input.wasPressed('forward') ? 1 : 0);
+    const step = (input.wasPressed('back') ? 1 : 0) - (input.wasPressed('forward') ? 1 : 0);
     if (step !== 0 && this.items.length) {
       let next = this.focus;
       do next = (next + step + this.items.length) % this.items.length;
@@ -116,10 +120,7 @@ export class Menus {
         <div class="menu-list"></div>
       </div>`, [
       button('Resume', () => game.resume()),
-      button('City Map', () => {
-        game.resume();
-        game.openMap();
-      }),
+      button('City Map', () => game.openMap()),
       button('Stats', () => this.showPanel(this.pause, 'Stats', this.statsHtml(), () => this.showPause())),
       button('Settings', () => this.showSettings(this.pause, () => this.showPause())),
       button('Controls', () => this.showPanel(this.pause, 'Controls', this.controlsHtml(), () => this.showPause())),

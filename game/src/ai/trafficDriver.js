@@ -2,6 +2,7 @@
 // right, inner lane turns left), stops at red lights and behind cars or people, honks when
 // blocked and panics (speeds off, ignores lights) after gunfire or a crash.
 import { clamp } from '../core/mathUtils.js';
+import { steerLimitAt } from '../vehicles/vehiclePhysics.js';
 
 const ARRIVE = 3.2;
 const STOP_MARGIN = 1.2;
@@ -179,7 +180,7 @@ export class TrafficDriver {
     const distance = Math.max(1, Math.hypot(local.x, local.z));
     const axle = vehicle.spec.wheelBase * 2;
     const steerAngle = Math.atan2(2 * axle * -local.x, distance * distance);
-    const limit = vehicle.spec.steerMax * (1 - Math.min(Math.abs(speed) / 50, 1) * 0.7);
+    const limit = steerLimitAt(vehicle.spec, speed);
     controls.steer = clamp(steerAngle / limit, -1, 1);
 
     // Target speed: cruise, slow for turns, stop for lights and obstacles.

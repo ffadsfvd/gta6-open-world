@@ -82,6 +82,8 @@ export class DialogueBox {
     }
     const pressed = input && (input.wasPressed('interact') || input.wasPressed('confirm'));
     if (pressed) {
+      input.consume('interact');
+      input.consume('confirm');
       if (this.shown < length) this.reveal();
       else this.next();
     } else if (this.hold > (this.autoAdvance ? 1.6 : 6) + length * 0.02) {

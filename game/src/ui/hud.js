@@ -37,6 +37,7 @@ export class Hud {
     this.vehicleName = el('vehicle-name');
     this.radio = el('radio-station');
     this.crosshair = el('crosshair');
+    this.lockHint = el('lock-hint');
     this.speedCtx = el('speedometer-canvas').getContext('2d');
     this.minimap = new Minimap(el('minimap-canvas'), painter);
     this.stars.innerHTML = '<span>★</span>'.repeat(5);
@@ -160,5 +161,7 @@ export class Hud {
       this.radio.textContent = game.audio ? game.audio.stationName() : '';
     }
     this.crosshair.classList.toggle('hidden', !(player.aimYaw !== null && !vehicle));
+    const input = game.input;
+    this.lockHint.classList.toggle('hidden', game.state !== 'playing' || !input.wantsLock || input.pointerLocked || game.shop.isOpen);
   }
 }

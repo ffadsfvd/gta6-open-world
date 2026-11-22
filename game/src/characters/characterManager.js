@@ -37,6 +37,8 @@ export class CharacterManager {
   update(dt) {
     const game = this.game;
     for (const character of this.list) {
+      // Nothing but the keyboard moves the player: a brain left on him by mistake is dropped.
+      if (character.brain && character.kind === 'player') character.brain = null;
       if (character.brain && character.active) character.brain.update(dt, game);
     }
     for (const character of this.list) {

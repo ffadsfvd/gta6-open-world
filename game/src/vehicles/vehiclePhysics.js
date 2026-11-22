@@ -9,6 +9,13 @@ import { districtAt } from '../world/cityPlan.js';
 const GRAVITY = 20;
 const BRAKE_DECEL = 15;
 const REVERSE_LIMIT = 9;
+/** Sideways pull the tyres manage at full grip, in m/s² (about 1.35 g, an arcade-quick car). */
+const CORNERING = 13.2;
+
+/** Steering lock left at `speed`: the wheel turns less the faster the car goes. */
+export function steerLimitAt(spec, speed) {
+  return spec.steerMax * (1 - Math.min(Math.abs(speed) / 45, 1) * 0.72);
+}
 
 function surfaceGrip(x, z) {
   if (waterDepth(x, z) > 0.3) return 0.55;
@@ -32,12 +39,18 @@ export function stepVehiclePhysics(vehicle, dt) {
   const speed = Math.abs(forward);
 
   // Steering: less lock at speed, eased toward the wanted angle.
-  const steerLimit = spec.steerMax * (1 - Math.min(speed / 50, 1) * 0.7);
+  const steerLimit = steerLimitAt(spec, speed);
   const wantedSteer = wrecked ? 0 : controls.steer * steerLimit;
-  vehicle.steerAngle = approach(vehicle.steerAngle, wantedSteer, dt * 2.8);
+  vehicle.steerAngle = approach(vehicle.steerAngle, wantedSteer, dt * 5);
   const axle = spec.wheelBase * 2;
-  const wantedYawRate = -(forward * Math.tan(vehicle.steerAngle)) / axle;
-  const yawTraction = (controls.handbrake ? 2.4 : 9) * traction;
+  let wantedYawRate = -(forward * Math.tan(vehicle.steerAngle)) / axle;
+  // The tyres can only pull so hard sideways: at speed the car runs wide instead of snapping
+  // round. The handbrake lets the rear go, so a drift may rotate faster than it grips.
+  if (!controls.handbrake && speed > 2) {
+    const maxRate = (CORNERING * (spec.grip / 9.5) * traction) / speed;
+    wantedYawRate = clamp(wantedYawRate, -maxRate, maxRate);
+  }
+  const yawTraction = (controls.handbrake ? 2.4 : 12) * traction;
   vehicle.yawRate += (wantedYawRate - vehicle.yawRate) * Math.min(1, yawTraction * dt);
   if (controls.handbrake && speed > 5 && !wrecked) vehicle.yawRate -= controls.steer * 1.9 * dt * Math.sign(forward);
   vehicle.yaw += vehicle.yawRate * dt;

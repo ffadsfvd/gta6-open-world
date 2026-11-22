@@ -28,7 +28,10 @@ export class ShopPanel {
   open() {
     this.isOpen = true;
     this.game.player.enabled = false;
+    this.game.player.character.setMove(0, 0, 0);
+    // The cursor is needed to click the counter; losing the mouse here is not a pause.
     this.game.input.releaseLock();
+    this.game.input.releaseAll();
     this.render();
     this.root.classList.remove('hidden');
   }
@@ -37,6 +40,7 @@ export class ShopPanel {
     this.isOpen = false;
     this.root.classList.add('hidden');
     this.game.player.enabled = true;
+    this.game.input.requestLock();
   }
 
   buy(index) {
@@ -59,7 +63,9 @@ export class ShopPanel {
       const element = document.createElement('button');
       element.className = 'menu-button';
       element.disabled = !item.ok;
+      element.tabIndex = -1;
       element.innerHTML = `<span>${index + 1}. ${item.label} — ${formatMoney(item.price)}</span>${item.note ? `<small>${item.note}</small>` : ''}`;
+      element.addEventListener('mousedown', (event) => event.preventDefault());
       element.addEventListener('click', () => this.buy(index));
       list.appendChild(element);
     });

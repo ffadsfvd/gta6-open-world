@@ -81,7 +81,6 @@ export class AudioDirector {
     const playing = game.state === 'playing';
     this.cars.update(dt, game, playing);
     const driving = playing && Boolean(game.player.character.vehicle);
-    if (driving && game.input.wasPressed('radio')) this.nextStation();
     if (game.state === 'title') this.music.playTitle();
     else if (driving && this.station >= 0) this.music.play(STATIONS[this.station]);
     else if (game.state !== 'paused') this.music.stop();

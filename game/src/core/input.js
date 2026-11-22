@@ -1,15 +1,13 @@
 // Keyboard and mouse state for one frame: which actions are held, which were pressed this
 // frame, and how far the mouse moved. Mouse look uses pointer lock, with click-drag as a fallback.
+// Anything held is let go when the window loses focus, the tab is hidden or the mouse is
+// released, so no key can stay stuck "down" across a menu, Alt+Tab or Esc.
 
 export const ACTIONS = {
-  forward: ['KeyW'],
-  back: ['KeyS'],
-  left: ['KeyA'],
-  right: ['KeyD'],
-  lookLeft: ['ArrowLeft'],
-  lookRight: ['ArrowRight'],
-  lookUp: ['ArrowUp'],
-  lookDown: ['ArrowDown'],
+  forward: ['KeyW', 'ArrowUp'],
+  back: ['KeyS', 'ArrowDown'],
+  left: ['KeyA', 'ArrowLeft'],
+  right: ['KeyD', 'ArrowRight'],
   sprint: ['ShiftLeft', 'ShiftRight'],
   jump: ['Space'],
   handbrake: ['Space'],
@@ -23,6 +21,8 @@ export const ACTIONS = {
   weapon1: ['Digit1'],
   weapon2: ['Digit2'],
   weapon3: ['Digit3'],
+  weapon4: ['Digit4'],
+  weapon5: ['Digit5'],
   taxi: ['KeyT'],
   radio: ['KeyN'],
   map: ['KeyM'],
@@ -32,7 +32,7 @@ export const ACTIONS = {
 
 const BUTTON_FIRE = 1;
 const BUTTON_AIM = 2;
-const BLOCKED_DEFAULTS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab']);
+const BLOCKED_DEFAULTS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter']);
 
 export class Input {
   constructor(canvas) {
@@ -47,25 +47,34 @@ export class Input {
     this.pointerLocked = false;
     this.wantsLock = false;
     this.onLockLost = null;
+    this.onLockGained = null;
     this.bind();
   }
 
   bind() {
     window.addEventListener('keydown', (event) => {
-      if (BLOCKED_DEFAULTS.has(event.code) && this.wantsLock) event.preventDefault();
-      if (!this.down.has(event.code)) this.pressed.add(event.code);
+      if (this.wantsLock && (BLOCKED_DEFAULTS.has(event.code) || event.code === 'AltLeft')) event.preventDefault();
+      // Holding a key repeats keydown; only the first one is a press.
+      if (!event.repeat && !this.down.has(event.code)) this.pressed.add(event.code);
       this.down.add(event.code);
     });
-    window.addEventListener('keyup', (event) => this.down.delete(event.code));
-    window.addEventListener('blur', () => {
-      this.down.clear();
-      this.buttons = 0;
+    window.addEventListener('keyup', (event) => {
+      this.down.delete(event.code);
+      if (event.code === 'AltLeft' && this.wantsLock) event.preventDefault();
+    });
+    window.addEventListener('blur', () => this.releaseAll());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.releaseAll();
     });
     this.canvas.addEventListener('mousedown', (event) => {
+      if (this.wantsLock && !this.pointerLocked) {
+        // The click that captures the mouse is not also a shot or a punch.
+        this.requestLock();
+        return;
+      }
       const bit = event.button === 0 ? BUTTON_FIRE : event.button === 2 ? BUTTON_AIM : 0;
       this.buttons |= bit;
       this.buttonsPressed |= bit;
-      if (this.wantsLock && !this.pointerLocked) this.requestLock();
     });
     window.addEventListener('mouseup', (event) => {
       const bit = event.button === 0 ? BUTTON_FIRE : event.button === 2 ? BUTTON_AIM : 0;
@@ -85,11 +94,17 @@ export class Input {
       const locked = document.pointerLockElement === this.canvas;
       const lost = this.pointerLocked && !locked;
       this.pointerLocked = locked;
-      if (lost && this.onLockLost) this.onLockLost();
+      if (lost) {
+        this.releaseAll();
+        if (this.onLockLost) this.onLockLost();
+      } else if (locked && this.onLockGained) {
+        this.onLockGained();
+      }
     });
   }
 
   requestLock() {
+    if (this.pointerLocked) return;
     try {
       const result = this.canvas.requestPointerLock();
       if (result && typeof result.catch === 'function') result.catch(() => {});
@@ -100,6 +115,29 @@ export class Input {
 
   releaseLock() {
     if (document.pointerLockElement) document.exitPointerLock();
+  }
+
+  /** Lets go of every key and button (focus lost, menu opened, respawn). */
+  releaseAll() {
+    this.down.clear();
+    this.pressed.clear();
+    this.buttons = 0;
+    this.buttonsPressed = 0;
+    this.mouseDX = 0;
+    this.mouseDY = 0;
+    this.wheel = 0;
+  }
+
+  /** Forgets this frame's presses once something (a menu, a dialogue) has used them. */
+  consumePresses() {
+    this.pressed.clear();
+    this.buttonsPressed = 0;
+    this.wheel = 0;
+  }
+
+  /** Forgets this frame's press of one action, so no other system answers the same key. */
+  consume(action) {
+    for (const code of ACTIONS[action] ?? []) this.pressed.delete(code);
   }
 
   isDown(action) {

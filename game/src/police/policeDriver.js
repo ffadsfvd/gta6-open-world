@@ -2,6 +2,7 @@
 // out of sight, cut straight at them (leading their velocity) when the way is clear, box them
 // in or ram at high heat, slow to a stop beside a suspect on foot, and back out when stuck.
 import { clamp } from '../core/mathUtils.js';
+import { speedForHeadingError, speedForLineAhead } from '../ai/cornering.js';
 
 const REPLAN_SECONDS = 1.4;
 
@@ -23,18 +24,26 @@ export class PoliceDriver {
   plan(game, tx, tz) {
     const network = game.network;
     const vehicle = this.vehicle;
-    const ahead = network.nearestNode(vehicle.x + Math.sin(vehicle.yaw) * 20, vehicle.z + Math.cos(vehicle.yaw) * 20);
+    const fx = Math.sin(vehicle.yaw);
+    const fz = Math.cos(vehicle.yaw);
+    // Start from the junction the car is at, or the next one in its direction of travel: never
+    // from one it has already passed (it would circle back to it forever).
+    const near = network.nearestNode(vehicle.x, vehicle.z);
+    let start = near;
+    const nearDistance = Math.hypot(near.x - vehicle.x, near.z - vehicle.z);
+    if (nearDistance > 12 && (near.x - vehicle.x) * fx + (near.z - vehicle.z) * fz < 0) {
+      const ahead = network.nearestNode(vehicle.x + fx * 45, vehicle.z + fz * 45);
+      if (ahead.id !== near.id) start = ahead;
+    }
     const goal = network.nearestNode(tx, tz);
-    const path = network.findPath(ahead.id, goal.id);
+    const path = network.findPath(start.id, goal.id);
     this.waypoints = [];
+    if (Math.hypot(start.x - vehicle.x, start.z - vehicle.z) > 12) this.waypoints.push({ x: start.x, z: start.z });
     for (let index = 0; index < path.length; index += 1) {
-      const node = network.nodes[path[index]];
       if (index + 1 < path.length) {
         const line = network.lane(path[index], path[index + 1], 0);
         if (index > 0) {
           for (const point of network.turnPoints(path[index - 1], path[index], path[index + 1], 0, 0)) this.waypoints.push(point);
-        } else {
-          this.waypoints.push({ x: node.x, z: node.z });
         }
         this.waypoints.push({ x: line.ex, z: line.ez });
       }
@@ -85,6 +94,11 @@ export class PoliceDriver {
       const point = this.waypoints[0];
       aimX = point.x;
       aimZ = point.z;
+      // On the last street before the suspect: head for them, not for a junction behind them.
+      if (this.waypoints.length <= 2 && distance < 70) {
+        aimX = target.x;
+        aimZ = target.z;
+      }
     }
     const local = vehicle.worldToLocal(aimX, aimZ);
     const speed = vehicle.forwardSpeed;
@@ -94,14 +108,16 @@ export class PoliceDriver {
     const footTarget = !player.vehicle;
     const level = game.wanted.level;
     const targetSpeed = Math.hypot(tvx, tvz);
-    let wanted = clear ? 46 * this.aggression : 30;
-    if (footTarget && distance < 25) wanted = Math.max(0, (distance - 7) * 0.9);
+    // Fast on the straights, slowing in time for the corners the tyres can actually take.
+    let wanted = clear ? 46 * this.aggression : Math.min(30, speedForLineAhead(vehicle, this.waypoints));
+    wanted = Math.min(wanted, speedForHeadingError(angleLeft));
+    // A suspect on foot: brake in time to stop a few metres short, never run them down.
+    if (footTarget && distance < 60) wanted = Math.min(wanted, Math.sqrt(2 * 7 * Math.max(0, distance - 8)));
     else if (!footTarget && clear && distance < 22) {
       // Close behind a suspect's car: shadow it, only ramming from four stars.
       const push = level >= 4 ? 5 : distance > 9 ? 1.5 : -1;
       wanted = Math.max(4, targetSpeed + push);
     }
-    wanted *= 1 - Math.abs(steer) * 0.45;
     if (local.z < 0) wanted = Math.min(wanted, 12);
     // Stuck: wanted to go but did not move; back up with the wheel turned the other way.
     if (this.reverse > 0) {

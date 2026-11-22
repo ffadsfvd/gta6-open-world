@@ -37,6 +37,13 @@ export default {
     call((ctx) => {
       const van = ctx.vars.van;
       const game = ctx.game;
+      const player = game.player.character;
+      if (van.driver === player) {
+        // Kai took the van itself: the ledger is already in his hands.
+        ctx.vars.ledger = null;
+        game.notifications.toast('The ledger is on the passenger seat!', '', 4);
+        return;
+      }
       const drop = van.localToWorld(van.halfWidth + 1.6, 0);
       ctx.vars.ledger = { x: drop.x, z: drop.z, y: van.y };
       const driver = van.driver;

@@ -4,6 +4,9 @@
 
 const THRESHOLDS = [0, 1, 3, 6, 10, 15];
 const ESCAPE_SECONDS = [0, 7, 10, 14, 18, 24];
+/** Around the last place police saw the player they comb the streets: hiding there is slower. */
+const SEARCH_RADIUS = [0, 45, 60, 80, 100, 120];
+const SEARCH_AREA_RATE = 0.4;
 const SIGHT_RANGE = 90;
 const CLOSE_RANGE = 22;
 
@@ -156,7 +159,8 @@ export class WantedSystem {
       this.unseen = 0;
       this.lastKnown = { x: player.x, z: player.z };
     } else {
-      this.unseen += dt;
+      const fromLastSeen = Math.hypot(player.x - this.lastKnown.x, player.z - this.lastKnown.z);
+      this.unseen += dt * (fromLastSeen > SEARCH_RADIUS[this.level] ? 1 : SEARCH_AREA_RATE);
       if (this.unseen > ESCAPE_SECONDS[this.level] && this.floor === 0) {
         this.clear('escaped');
         game.events.emit('wantedEscaped', {});
