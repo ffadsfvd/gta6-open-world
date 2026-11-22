@@ -1,15 +1,19 @@
-// The shared materials of the city, each keyed by name: facade styles, ground finishes, signs,
-// water, pools and the painted road markings.
+// The shared materials of the city, each keyed by name: facade styles (with their night-time
+// window lights), ground finishes, signs, water, pools and the painted road markings.
 import * as THREE from 'three';
 
-export function createMaterials(textures, signAtlas) {
+/** Materials whose glow follows the time of day, and how bright each gets at full night. */
+export const NIGHT_GLOW = { glass: 1.1, deco: 1.25, residential: 1.25, office: 1.15, storefront: 1.5 };
+
+export function createMaterials(textures, signAtlas, windowLights = {}) {
   const standard = (options) => new THREE.MeshStandardMaterial({ vertexColors: true, ...options });
+  const lit = (style) => (windowLights[style] ? { emissiveMap: windowLights[style], emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0 } : {});
   const materials = {
-    glass: standard({ map: textures.glass, roughness: 0.14, metalness: 0.7, envMapIntensity: 1.25 }),
-    deco: standard({ map: textures.deco, roughness: 0.82 }),
-    residential: standard({ map: textures.residential, roughness: 0.85 }),
-    office: standard({ map: textures.office, roughness: 0.6, metalness: 0.1 }),
-    storefront: standard({ map: textures.storefront, roughness: 0.45, metalness: 0.05 }),
+    glass: standard({ map: textures.glass, roughness: 0.14, metalness: 0.7, envMapIntensity: 1.25, ...lit('glass') }),
+    deco: standard({ map: textures.deco, roughness: 0.82, ...lit('deco') }),
+    residential: standard({ map: textures.residential, roughness: 0.85, ...lit('residential') }),
+    office: standard({ map: textures.office, roughness: 0.6, metalness: 0.1, ...lit('office') }),
+    storefront: standard({ map: textures.storefront, roughness: 0.45, metalness: 0.05, ...lit('storefront') }),
     warehouse: standard({ map: textures.warehouse, roughness: 0.7, metalness: 0.2 }),
     plain: standard({ roughness: 0.75 }),
     shiny: standard({ roughness: 0.3, metalness: 0.6 }),

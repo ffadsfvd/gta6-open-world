@@ -131,6 +131,8 @@ export class WantedSystem {
 
   canSee(player) {
     const game = this.game;
+    // The helicopter sees whoever is inside its searchlight.
+    if (game.helicopter && game.helicopter.seesPlayer) return true;
     const px = player.x;
     const pz = player.z;
     const look = (x, z) => {

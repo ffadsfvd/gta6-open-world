@@ -17,49 +17,39 @@ function career(game, { money = 12850, story = 4 } = {}) {
   game.hud.shownMoney = money;
 }
 
-/** Adds oncoming traffic on the far lanes of the avenue ahead of (x, z). */
-function oncomingTraffic(game, x, z, count) {
-  const network = game.network;
-  for (let index = 0; index < count; index += 1) {
-    const vehicle = game.population.spawnTraffic({ x, z }, 0, 1e9);
-    if (!vehicle) continue;
-    const lane = index % 2;
-    const t = 0.2 + index * 0.22;
-    vehicle.ai.place(network.nodeAt(7, 4).id, network.nodeAt(7, 3).id, lane, Math.min(0.95, t));
-  }
-}
-
 function startPlaying(game) {
   game.menus.hideTitle();
   game.state = 'playing';
   game.hud.show(true);
 }
 
-/** Kai in the Vexa GT tearing down Seabreeze Boulevard with three cruisers on his tail. */
+/** Kai in the Vexa GT racing west up Pier Street at sunset, four cruisers and the helicopter on him. */
 function coverScene(game) {
   career(game);
   startPlaying(game);
+  game.timeOfDay.set(18.8);
+  game.timeOfDay.frozen = true;
   const hero = game.player.character;
   hero.health = 82;
   hero.armour = 55;
   const network = game.network;
   const car = game.vehicles.spawn('sports', 0, 0, 0, { role: 'player', paint: '#e01e37' });
   const driver = new TrafficDriver(car, network, game.city.signals, game.rng.fork(3));
-  driver.place(network.nodeAt(7, 2).id, network.nodeAt(7, 3).id, 1, 0.55);
-  driver.cruise = 27;
+  driver.place(network.nodeAt(6, 4).id, network.nodeAt(5, 4).id, 0, 0.04);
+  driver.cruise = 26;
   driver.startPanic(999);
-  driver.speedLimit = 27;
+  driver.speedLimit = 26;
   driver.preferStraight = true;
   game.player.enterVehicle(car);
   car.ai = driver;
-  car.vx = 0;
-  car.vz = 24;
+  car.vx = -24;
+  car.vz = 0;
   game.player.enabled = false;
-  game.population.walkerTarget = 70;
+  game.population.walkerTarget = 80;
   game.population.reset();
-  // Keep the chase lane clear: ambient traffic near the car goes, oncoming cars are placed below.
+  // Keep the chase lanes clear: ambient traffic near the car goes, the cars below are placed.
   for (const vehicle of [...game.population.traffic]) {
-    if (Math.hypot(vehicle.x - car.x, vehicle.z - car.z) < 170) game.vehicles.remove(vehicle);
+    if (Math.hypot(vehicle.x - car.x, vehicle.z - car.z) < 150) game.vehicles.remove(vehicle);
   }
   game.population.traffic = game.population.traffic.filter((vehicle) => vehicle.active);
   game.missions.start({
@@ -67,16 +57,27 @@ function coverScene(game) {
     steps: () => [loseCops("It's a setup! *Lose the cops*, then head home.", 0, PLACES.safehouse)],
   });
   game.hud.hideMissionTitle();
-  game.wanted.setLevel(3, true);
-  for (const [back, side] of [[8, 3.5], [15, 7], [21, 0.4]]) {
-    const unit = game.police.spawnUnit({ x: car.x + side, z: car.z - back, yaw: 0 }, true);
-    unit.vehicle.vz = 24;
+  game.wanted.setLevel(4, true);
+  for (const [back, side] of [[13, -3.6], [20, 0.4], [28, -4.8], [37, -1.4]]) {
+    const unit = game.police.spawnUnit({ x: car.x + back, z: car.z + side, yaw: -Math.PI / 2 }, true);
+    unit.vehicle.vx = -22;
   }
-  oncomingTraffic(game, car.x, car.z + 80, 3);
-  for (let index = 0; index < 18; index += 1) game.population.spawnWalker({ x: car.x - 6, z: car.z + 75 }, 0, 36);
+  // Oncoming traffic pulls over on the eastbound side; a car that lost a fight burns at the curb.
+  const paints = ['#f1faee', '#2a9d8f', '#ffd166', '#3a86ff'];
+  for (const [ahead, lane] of [[-52, 1], [-85, 0], [34, 1], [62, 0]]) {
+    const vehicle = game.population.spawnTraffic({ x: car.x, z: car.z }, 0, 1e9);
+    if (!vehicle) continue;
+    vehicle.paint.set(paints.pop());
+    vehicle.ai.place(network.nodeAt(5, 4).id, network.nodeAt(6, 4).id, lane, Math.min(0.92, Math.max(0.05, (car.x + ahead - 91) / 58)));
+  }
+  const wreck = game.vehicles.spawn('sedan', car.x + 30, 8.6, 0.5, { role: 'parked', paint: '#5a5f66' });
+  wreck.damage(wreck.health * 0.885);
+  for (let index = 0; index < 22; index += 1) game.population.spawnWalker({ x: car.x - 8, z: car.z }, 0, 40);
   game.followCamera.view = 0;
   game.followCamera.lookBack = true;
-  game.simulate(3.0);
+  game.simulate(1.5);
+  // The helicopter hangs low over the street behind the cruisers, its beam on Kai.
+  game.helicopter.placeAt(car.x + 42, car.z - 5, car.x + 1, car.z, 17);
 }
 
 /** On foot in Mercado Plaza: pistol drawn on Crane's crew, the crowd scattering. */

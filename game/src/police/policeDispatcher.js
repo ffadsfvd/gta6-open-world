@@ -7,7 +7,7 @@ import { OfficerBrain } from './officerBrain.js';
 import { TrafficDriver } from '../ai/trafficDriver.js';
 import { groundHeight } from '../world/terrain.js';
 
-const CARS_PER_LEVEL = [0, 1, 2, 3, 4, 5];
+const CARS_PER_LEVEL = [0, 1, 2, 3, 5, 6];
 const SPAWN_GAP = [99, 4, 3, 2.4, 2, 1.6];
 const ROADBLOCK_GAP = 28;
 const RECYCLE_DISTANCE = 240;

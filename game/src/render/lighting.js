@@ -1,5 +1,6 @@
-// Sun and sky light. The sun's shadow camera follows the player, snapped to whole shadow-map
-// texels in light space so shadow edges do not shimmer as the camera moves.
+// Sun (or moon) and sky light, following the time of day. The shadow camera follows the player,
+// snapped to whole shadow-map texels in light space so shadow edges do not shimmer as the
+// camera moves.
 import * as THREE from 'three';
 
 export class Lighting {
@@ -24,9 +25,27 @@ export class Lighting {
     scene.add(this.sun);
     scene.add(this.sun.target);
     this.texel = (this.extent * 2) / size;
-    this.axisRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), this.direction).normalize();
-    this.axisUp = new THREE.Vector3().crossVectors(this.direction, this.axisRight).normalize();
+    this.axisRight = new THREE.Vector3();
+    this.axisUp = new THREE.Vector3();
+    this.setDirection(this.direction);
     this.focus = new THREE.Vector3();
+  }
+
+  setDirection(direction) {
+    this.direction.copy(direction).normalize();
+    this.axisRight.crossVectors(new THREE.Vector3(0, 1, 0), this.direction).normalize();
+    this.axisUp.crossVectors(this.direction, this.axisRight).normalize();
+  }
+
+  /** Sun or moon position, light colours and strengths for the current hour. */
+  applyTime(time) {
+    const s = time.state;
+    this.setDirection(time.lightDirection);
+    this.sun.color.copy(s.sun);
+    this.sun.intensity = s.sunI;
+    this.hemisphere.color.copy(s.sky);
+    this.hemisphere.groundColor.copy(s.ground);
+    this.hemisphere.intensity = s.ambI;
   }
 
   /** Centre the shadowed area on (x, z), a little ahead of where the camera looks. */

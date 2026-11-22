@@ -121,7 +121,7 @@ export class VehicleManager {
     return best;
   }
 
-  render(glow, time) {
-    this.renderer.sync(this.list, glow, time);
+  render(glow, time, pools = null, night = 0) {
+    this.renderer.sync(this.list, glow, time, pools, night);
   }
 }

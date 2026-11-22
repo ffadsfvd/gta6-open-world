@@ -17,8 +17,12 @@ const lampPoint = new THREE.Vector3();
 export class VehicleRenderer {
   constructor(scene) {
     this.models = getVehicleModels();
-    this.paintMaterial = new THREE.MeshStandardMaterial({ roughness: 0.26, metalness: 0.5, envMapIntensity: 1.35 });
-    this.trimMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.25 });
+    // Clear-coated paint; the windows are dark vertex colours in the same mesh, so they catch
+    // the sky in the clear coat like real glass.
+    this.paintMaterial = new THREE.MeshPhysicalMaterial({
+      vertexColors: true, roughness: 0.34, metalness: 0.45, clearcoat: 0.85, clearcoatRoughness: 0.1, envMapIntensity: 1.3,
+    });
+    this.trimMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.45 });
     this.glassMaterial = new THREE.MeshStandardMaterial({
       color: '#1a2833', roughness: 0.05, metalness: 0.6, transparent: true, opacity: 0.7, envMapIntensity: 1.7,
     });
@@ -38,7 +42,7 @@ export class VehicleRenderer {
       }
       this.groups[type] = { paint, trim, glass, count: 0 };
     }
-    this.wheels = new THREE.InstancedMesh(createWheelGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.3 }), CAPACITY * 9 * 4);
+    this.wheels = new THREE.InstancedMesh(createWheelGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.5 }), CAPACITY * 9 * 4);
     this.wheels.count = 0;
     this.wheels.castShadow = true;
     this.wheels.frustumCulled = false;
@@ -46,9 +50,12 @@ export class VehicleRenderer {
   }
 
   /** Writes this frame's instances for all active vehicles and their light glows. */
-  sync(vehicles, glow, time) {
+  sync(vehicles, glow, time, pools = null, night = 0) {
     for (const group of Object.values(this.groups)) group.count = 0;
     let wheelCount = 0;
+    // Headlights grow from parking glows by day to bright lamps with beams on the road at night.
+    const headSize = 0.9 + night * 0.9;
+    const headPower = 0.9 + night * 1.6;
     for (const vehicle of vehicles) {
       if (!vehicle.active) continue;
       const group = this.groups[vehicle.type];
@@ -84,12 +91,18 @@ export class VehicleRenderer {
       if (lit) {
         for (const [lx, ly, lz] of model.lights.heads) {
           lampPoint.set(lx, ly, lz).applyMatrix4(tempMatrix);
-          glow.add(lampPoint.x, lampPoint.y, lampPoint.z, 0.9, 0.9, 0.82, 0.6);
+          glow.add(lampPoint.x, lampPoint.y, lampPoint.z, headSize, headPower, headPower * 0.92, headPower * 0.68);
+        }
+        if (pools && night > 0.15) {
+          // One soft beam on the road ahead of the car.
+          const reach = vehicle.halfLength + 7.5;
+          const beam = night * 0.55;
+          pools.add(vehicle.x + Math.sin(vehicle.yaw) * reach, vehicle.y + 0.04, vehicle.z + Math.cos(vehicle.yaw) * reach, 7, 15, vehicle.yaw, beam, beam * 0.9, beam * 0.7);
         }
         const brake = vehicle.brakeLight ? 1 : 0.35;
         for (const [lx, ly, lz] of model.lights.tails) {
           lampPoint.set(lx, ly, lz).applyMatrix4(tempMatrix);
-          glow.add(lampPoint.x, lampPoint.y, lampPoint.z, vehicle.brakeLight ? 1.3 : 0.7, 0.95 * brake, 0.04 * brake, 0.03 * brake);
+          glow.add(lampPoint.x, lampPoint.y, lampPoint.z, (vehicle.brakeLight ? 1.3 : 0.7) * (1 + night * 0.4), 0.95 * brake, 0.04 * brake, 0.03 * brake);
         }
       }
       if (vehicle.siren) {
@@ -100,6 +113,12 @@ export class VehicleRenderer {
           if (color === 'red') glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 4.6 : 1.3, on ? 2.2 : 0.4, 0.06, 0.06);
           else glow.add(lampPoint.x, lampPoint.y, lampPoint.z, on ? 4.6 : 1.3, 0.06, on ? 0.35 : 0.06, on ? 2.6 : 0.45);
         });
+        if (pools) {
+          // The flashers wash the street around the cruiser red, then blue.
+          const wash = 0.2 + night * 0.75;
+          if (phase === 0) pools.add(vehicle.x, vehicle.y + 0.04, vehicle.z, 13, 13, 0, 0.9 * wash, 0.05 * wash, 0.06 * wash);
+          else pools.add(vehicle.x, vehicle.y + 0.04, vehicle.z, 13, 13, 0, 0.05 * wash, 0.16 * wash, 1.1 * wash);
+        }
       }
     }
     for (const group of Object.values(this.groups)) {

@@ -6,6 +6,7 @@ import { STORYLINE } from '../missions/storyline.js';
 import { MissionRunner } from '../missions/missionRunner.js';
 import { WantedSystem } from '../police/wantedSystem.js';
 import { PoliceDispatcher } from '../police/policeDispatcher.js';
+import { PoliceHelicopter } from '../police/policeHelicopter.js';
 import { VehicleManager } from '../vehicles/vehicleManager.js';
 import { ActivityManager } from '../activities/activityManager.js';
 import { CombatSystem } from '../combat/combatSystem.js';
@@ -39,12 +40,16 @@ import { SIGNAL_HEAD_Y } from '../world/trafficSignals.js';
 import { RoadNetwork } from '../ai/roadNetwork.js';
 import { createRenderer } from '../render/renderer.js';
 import { PostProcessing } from '../render/postProcessing.js';
-import { Sky, createEnvironmentMap } from '../render/sky.js';
+import { Sky, EnvironmentBaker } from '../render/sky.js';
 import { Lighting } from '../render/lighting.js';
+import { TimeOfDay } from '../render/timeOfDay.js';
 import { createTextures } from '../render/textures.js';
-import { createMaterials } from '../render/materials.js';
+import { createWindowLights } from '../render/windowLights.js';
+import { createMaterials, NIGHT_GLOW } from '../render/materials.js';
 import { createSignAtlas } from '../render/signAtlas.js';
-import { SUN_DIRECTION, PLAYER_TUNING, CAMERA_TUNING, CITY_NAME } from './config.js';
+import { LightPools } from '../effects/lightPools.js';
+import { StreetLights } from '../world/streetLights.js';
+import { PLAYER_TUNING, CAMERA_TUNING, CITY_NAME } from './config.js';
 import { createRandom } from './random.js';
 import { EventBus } from './events.js';
 import { Input } from './input.js';
@@ -76,14 +81,15 @@ export class Game {
     this.camera = camera;
     this.post = quality === 'high' ? new PostProcessing(renderer) : null;
     this.scene = new THREE.Scene();
-    const sun = new THREE.Vector3(SUN_DIRECTION.x, SUN_DIRECTION.y, SUN_DIRECTION.z).normalize();
-    this.sky = new Sky(this.scene, sun);
-    this.scene.environment = createEnvironmentMap(renderer, sun);
-    this.scene.environmentIntensity = 0.55;
-    this.lighting = new Lighting(this.scene, sun, quality);
+    // A new game starts late in the afternoon, so the first drive runs into the sunset.
+    this.timeOfDay = new TimeOfDay(this.options.hour ?? 17.2);
+    this.sky = new Sky(this.scene, this.timeOfDay.sunDirection);
+    this.environment = new EnvironmentBaker(renderer);
+    this.lighting = new Lighting(this.scene, this.timeOfDay.lightDirection, quality);
     this.textures = createTextures(this.seed);
     this.atlas = createSignAtlas();
-    this.materials = createMaterials(this.textures, this.atlas);
+    this.materials = createMaterials(this.textures, this.atlas, createWindowLights(this.seed));
+    this.applyTimeOfDay(true);
     this.collision = new CollisionWorld();
     this.city = buildCity({
       scene: this.scene, textures: this.textures, materials: this.materials, atlas: this.atlas,
@@ -97,6 +103,8 @@ export class Game {
     this.followCamera = new FollowCamera(camera, this.collision);
     this.titleCamera = new TitleCamera();
     this.glow = new GlowSprites(this.scene);
+    this.pools = new LightPools(this.scene);
+    this.streetLights = new StreetLights(this.city.props);
     this.network = new RoadNetwork();
     this.progress = new Progress(this.events);
     this.vehicles = new VehicleManager(this);
@@ -111,6 +119,7 @@ export class Game {
     this.combat = new CombatSystem(this);
     this.wanted = new WantedSystem(this);
     this.police = new PoliceDispatcher(this);
+    this.helicopter = new PoliceHelicopter(this);
     this.notifications = new Notifications();
     this.dialogue = new DialogueBox(this.events);
     this.painter = new MapPainter(this.city.plans);
@@ -272,6 +281,7 @@ export class Game {
     const simulate = this.state === 'playing' || this.state === 'title' || this.state === 'intro';
     if (simulate) {
       this.time += dt;
+      this.timeOfDay.update(dt);
       this.city.update(dt, this.time);
       if (this.state === 'intro') this.intro.update(dt, this.input);
       if (this.state === 'playing') {
@@ -286,6 +296,7 @@ export class Game {
       }
       this.population.update(dt);
       this.police.update(dt);
+      this.helicopter.update(dt);
       this.vehicles.update(dt);
       this.characters.update(dt);
       this.wanted.update(dt);
@@ -334,19 +345,43 @@ export class Game {
     }
   }
 
+  /**
+   * Hands the clock's light to everything that shows it: sky and fog, sun and ambient light,
+   * the reflections (re-baked as the light changes), exposure, lit windows, neon and lamps.
+   */
+  applyTimeOfDay(force = false) {
+    const time = this.timeOfDay;
+    const s = time.state;
+    this.sky.applyTime(time);
+    this.lighting.applyTime(time);
+    if (force || this.environment.isStale(time)) this.scene.environment = this.environment.bake(time);
+    this.scene.environmentIntensity = s.env;
+    this.renderer.toneMappingExposure = 1.05 * s.exposure;
+    const night = s.night;
+    for (const [name, strength] of Object.entries(NIGHT_GLOW)) this.materials[name].emissiveIntensity = night * strength;
+    this.materials.signs.emissiveIntensity = 0.6 + night * 1.5;
+    this.materials.glowLamp.emissiveIntensity = 1.6 + night * 2.4;
+  }
+
   render(dt) {
     if (this.state === 'title') this.followCamera.override = this.titleCamera.update(dt);
     if (!this.settings.shake) this.followCamera.trauma = 0;
     this.followCamera.update(dt, this.focus());
     const target = this.followCamera.target;
+    this.applyTimeOfDay();
     this.lighting.follow(target.x, target.z);
     this.sky.update(this.camera, this.time);
+    const night = this.timeOfDay.night;
     this.glow.begin();
+    this.pools.begin();
     this.drawSignals();
+    this.streetLights.draw(this.glow, this.pools, this.camera, night);
     this.effects.drawGlows(this.glow);
-    this.vehicles.render(this.glow, this.time);
+    this.vehicles.render(this.glow, this.time, this.pools, night);
+    this.helicopter.draw(this.glow, this.pools, this.time, night);
     this.characters.render(this.camera);
     this.glow.end();
+    this.pools.end();
     const markers = this.state === 'playing' ? [...this.missions.markers(), ...this.activities.worldMarkers()] : [];
     this.markers.draw(markers, this.time);
     if (this.state === 'playing' || this.state === 'paused') this.hud.update(dt);
