@@ -82,8 +82,15 @@ async function ensureOnFoot(player) {
 async function ensureCar(player, log) {
   const s = await snapshot(player);
   if (s.inCar && !(await player.read('Boolean(__game.player.character.vehicle?.onFire)'))) return true;
-  if (s.inCar) await ensureOnFoot(player);
-  const car = await stealCar(player, "v.type !== 'police' && v.type !== 'van' && v.health > 450 && !v.onFire");
+  if (s.inCar) {
+    // A burning car: get out and clear the blast before looking for another one.
+    const wreck = await player.read('(() => { const v = __game.player.character.vehicle; return { x: v.x, z: v.z }; })()');
+    await ensureOnFoot(player);
+    const me = await snapshot(player);
+    const away = Math.atan2(me.x - wreck.x, me.z - wreck.z);
+    await walkRoute(player, { x: me.x + Math.sin(away) * 22, z: me.z + Math.cos(away) * 22 }, { timeoutMs: 4500 });
+  }
+  const car = await stealCar(player, "v.type !== 'police' && v.type !== 'van' && v.health > 450 && !v.onFire && !__game.vehicles.list.some((w) => w.onFire && Math.hypot(w.x - v.x, w.z - v.z) < 14)");
   if (log) log(car ? `took a ${car.name}` : 'found no car');
   return Boolean(car);
 }
@@ -230,7 +237,7 @@ async function escape(player, graph, log, { anyStep = false } = {}) {
       return best;
     })()`);
     if (!goal) break;
-    const result = await driveRoute(player, goal, { radius: 12, stopAtGoal: false, timeoutMs: 25000, cruise: 30, graph, until: async () => (await missionState(player)).wanted === 0 });
+    const result = await driveRoute(player, goal, { radius: 12, stopAtGoal: false, timeoutMs: 25000, cruise: 24, graph, until: async () => (await missionState(player)).wanted === 0 });
     if (log) log(`fleeing: ${result.reason}, wanted ${(await missionState(player)).wanted}`);
   }
   await player.releaseAll();
@@ -247,11 +254,16 @@ async function race(player, graph, log) {
       continue;
     }
     const index = s.checkpoint;
-    await driveRoute(player, async () => {
+    if (!s.inCar) {
+      // Lost the car mid-race (wrecked or stuck): grab the nearest one and carry on.
+      if (!(await ensureCar(player, log))) await sleep(500);
+      continue;
+    }
+    const result = await driveRoute(player, async () => {
       const now = await missionState(player);
       return now.kind === 'race' && now.checkpoint === index ? now.route : null;
     }, { radius: 7, stopAtGoal: false, timeoutMs: 40000, cruise: 34, graph });
-    if (log) log(`checkpoint ${index + 1} passed`);
+    if (log) log(`checkpoint ${index + 1}: ${result.reason}`);
   }
 }
 

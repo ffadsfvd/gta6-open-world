@@ -45,9 +45,17 @@ try {
   }
   const graph = await loadStreetGraph(player);
   let lastObjective = '';
+  let lastFate = null;
   const watch = setInterval(async () => {
     try {
       const s = await missionState(player);
+      if (s.fate && s.fate !== lastFate) {
+        // How did it happen: who hit Kai last, and where.
+        const cause = await player.read('(() => { const h = __game.player.character; return { by: h.lastAttacker ? h.lastAttacker.kind : null, x: Math.round(h.x), z: Math.round(h.z), swimming: h.swimming, car: h.vehicle ? h.vehicle.name : null }; })()');
+        log(`  ${s.fate}: ${JSON.stringify(cause)}`);
+        await player.screenshot(`tmp/story/fate-${String(shot).padStart(2, '0')}.jpg`, 70);
+      }
+      lastFate = s.fate;
       if (s.objective && s.objective !== lastObjective) {
         lastObjective = s.objective;
         shot += 1;

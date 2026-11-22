@@ -1,5 +1,6 @@
 // Story 5 — Badge Trouble. Detective Voss offers to clear Lou's debts if Kai fetches a package
-// from the Pier 9 warehouse. It is a setup: three stars the moment Kai has it.
+// from the Pier 9 warehouse. It is a setup: two stars and every patrol in Ironwharf the moment
+// Kai has it.
 import { PLACES } from '../../world/cityPlan.js';
 import { call, collect, goTo, loseCops, talk } from '../missionSteps.js';
 
@@ -25,7 +26,7 @@ export default {
       ['voss', 'Good boy. Oh, one more thing: I told my colleagues a dangerous man just robbed Pier 9.'],
       ['kai', 'Voss!'],
     ], { freeze: false }),
-    loseCops("It's a setup! *Lose the cops*, then head home.", 3, PLACES.safehouse),
+    loseCops("It's a setup! *Lose the cops*, then head home.", 2, PLACES.safehouse),
     goTo(PLACES.safehouse, 'Stash the package at the *Seashell Apartments*.', { radius: 5 }),
     talk([
       ['kai', 'Voss wants me in a cell so Crane can have the docks and Lou\'s route. Fine.'],

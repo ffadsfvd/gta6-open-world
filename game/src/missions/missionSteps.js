@@ -290,10 +290,13 @@ export function race(checkpoints, rivals, title) {
       }
       const player = game.player.character;
       const point = checkpoints[this.index];
+      // Rivals race the car Kai brought: whatever he drives, they are never much faster.
+      const cap = player.vehicle ? player.vehicle.spec.maxSpeed * 1.04 : null;
       for (const racer of this.racers) {
         if (!racer.ai) continue;
         const lead = racer.ai.index - this.index;
-        racer.ai.pace = lead > 1 ? 0.84 : lead < -1 ? 1.06 : 1;
+        racer.ai.pace = lead > 1 ? 0.84 : lead > 0 ? 0.93 : lead < -1 ? 1.06 : 1;
+        racer.ai.speedCap = cap;
       }
       if (near(player, point, 10)) {
         this.index += 1;

@@ -93,6 +93,7 @@ export class RaceDriver {
     const angleLeft = Math.atan2(local.x, local.z);
     const steer = clamp(-angleLeft * 2.2, -1, 1);
     let wanted = Math.min(vehicle.spec.maxSpeed, TOP_SPEED) * this.skill * this.pace;
+    if (this.speedCap) wanted = Math.min(wanted, this.speedCap * this.pace);
     if (this.cornerAt(this.index)) {
       // Brake so the car arrives at the corner at corner speed.
       const room = Math.max(0, toTarget - 4);
