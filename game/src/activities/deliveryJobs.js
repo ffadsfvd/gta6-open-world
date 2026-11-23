@@ -1,6 +1,8 @@
 // Pelican Express: take a company van from the Ironwharf depot and drop three parcels across
-// town before the clock runs out.
+// town before the clock runs out. Each address is a sidewalk door: stopping the van at the curb
+// on either side of the street counts.
 import { call, deliver, enterVehicle, timeLimit } from '../missions/missionSteps.js';
+import { CURB_REACH } from './taxiJobs.js';
 import { PLACES } from '../world/cityPlan.js';
 
 const ADDRESSES = [
@@ -28,7 +30,7 @@ export function deliveryJob(game) {
       }),
       enterVehicle('van', 'Get in the *Pelican Express van*.'),
       timeLimit(170),
-      ...stops.map((stop, index) => deliver('van', stop, `Drop parcel ${index + 1}/3 on *${stop.label}*.`, { radius: 7 })),
+      ...stops.map((stop, index) => deliver('van', stop, `Drop parcel ${index + 1}/3 on *${stop.label}*.`, { radius: CURB_REACH - 3 })),
     ],
     onPass(g) {
       g.progress.bump('deliveries', 3);

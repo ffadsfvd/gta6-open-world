@@ -331,6 +331,36 @@
   text-shadow: 0 0 6px #ff2020;
 }
 
+/* A head hit: a gold ring and a gold X, with HEADSHOT flashing above the crosshair. */
+#crosshair.headshot {
+  border-color: #ffd23f;
+  box-shadow: 0 0 10px rgba(255, 200, 40, 0.95);
+}
+
+#crosshair.headshot::before {
+  color: #ffd23f;
+  text-shadow: 0 0 8px #ff8a00, 0 0 2px #000;
+}
+
+#hit-label {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 46px);
+  transform: translateX(-50%);
+  font: italic 900 20px var(--display-font);
+  letter-spacing: 3px;
+  color: #ffd23f;
+  text-shadow: 0 2px 0 #6b3b00, 0 0 10px rgba(255, 140, 0, 0.8);
+}
+
+#hit-label.pop {
+  animation: hit-pop 0.35s ease-out;
+}
+
+@keyframes hit-pop {
+  from { opacity: 0; transform: translateX(-50%) scale(1.6); }
+}
+
 #toast-stack {
   position: absolute;
   top: 160px;

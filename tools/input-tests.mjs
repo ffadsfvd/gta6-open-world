@@ -7,6 +7,7 @@
 import { openGame, reloadGame, sleep } from './lib/chromeSession.mjs';
 import { snapshot, walkTo, driveTo, nearestCar, carById, nearestPerson, punchOut, startNewGame, stealCar } from './lib/playerBot.mjs';
 import { driveRoute, walkRoute } from './lib/navigator.mjs';
+import { missionState, playMission, escape, aimAt, travel, startNextStory } from './lib/missionBot.mjs';
 
 const headless = !process.argv.includes('--headful');
 const wanted = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
@@ -15,6 +16,64 @@ const moved = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 /** Walks a fixed distance from the start to the safehouse door and back is too long; this is near. */
 const SAFEHOUSE = { x: 231, z: 40 };
+const ROAD_LINES = [-320, -240, -160, -80, 0, 80, 160, 240];
+
+/** The middle of the far half of the street beside a sidewalk spot (where a driver would stop). */
+function farLaneBeside(spot) {
+  const nearestLine = (value) => ROAD_LINES.reduce((best, line) => (Math.abs(value - line) < Math.abs(value - best) ? line : best), ROAD_LINES[0]);
+  const lx = nearestLine(spot.x);
+  const lz = nearestLine(spot.z);
+  const clamp = (v) => Math.max(-323.5, Math.min(243.5, v));
+  if (Math.abs(spot.x - lx) <= Math.abs(spot.z - lz)) return { x: clamp(lx - Math.sign(spot.x - lx || 1) * 3.5), z: clamp(spot.z) };
+  return { x: clamp(spot.x), z: clamp(lz - Math.sign(spot.z - lz || 1) * 3.5) };
+}
+
+/** Drives along the streets to the far lane beside `spot` and stops there with the handbrake. */
+async function pullUpAcross(p, spot) {
+  const lane = farLaneBeside(spot);
+  const drove = await driveRoute(p, lane, { radius: 4, timeoutMs: 150000, cruise: 18 });
+  await p.hold('Space', 900);
+  const car = await p.read('(() => { const v = __game.player.character.vehicle; return v ? { x: v.x, z: v.z } : null; })()');
+  return { ...drove, gap: car ? Math.hypot(car.x - spot.x, car.z - spot.z).toFixed(1) : null };
+}
+
+/** A saved game just after Paint Job: Juno's pistol in hand, Taco Tuesday next, early afternoon. */
+const PISTOL_SAVE = {
+  version: 1, savedAt: 1795000000000, hour: 13,
+  progress: { money: 900, completed: ['backInTheSun', 'paintJob'], storyIndex: 2, unlocks: { pistol: true, armour: false, smg: false }, shells: [], stats: {} },
+  arsenal: { current: 'pistol', owned: { fists: true, pistol: true }, ammo: { pistol: { mag: 12, reserve: 48 } } },
+  hero: { health: 100, armour: 0, x: 231, z: 40 },
+};
+
+/** Loads a save through the title screen's Continue button, then captures the mouse. */
+async function continueFrom(t, save) {
+  const p = t.player;
+  await p.read(`localStorage.setItem('ondaluz.save.v1', ${JSON.stringify(JSON.stringify(save))})`);
+  await reloadGame(t.session);
+  await sleep(500);
+  await p.clickElement('#start-screen .menu-list button:nth-of-type(1)');
+  await sleep(700);
+  if (!(await p.read('Boolean(document.pointerLockElement)'))) await p.click();
+  await sleep(300);
+}
+
+/**
+ * Aims the crosshair at a person's head with the mouse (leading a walker a little) and fires
+ * one shot with the left button while the right one aims. Returns what the HUD showed.
+ */
+async function shootHead(p, id) {
+  const head = () => p.read(`(() => { const c = __game.characters.list.find((c) => c.id === ${Number(id)}); if (!c || !c.active) return null; const h = c.appearance.build ? c.appearance.build.height : 1; return { x: c.x + c.vx * 0.12, y: c.y + 1.66 * h, z: c.z + c.vz * 0.12, state: c.state }; })()`);
+  for (let pass = 0; pass < 3; pass += 1) {
+    const point = await head();
+    if (!point || point.state === 'dead') return { fired: false };
+    await aimAt(p, point, { tolerance: 0.003, tries: 5 });
+  }
+  const before = await p.read('__game.combat.arsenal.ammo.pistol.mag');
+  await p.click(p.mouse.x, p.mouse.y, 'left', 40);
+  await sleep(50);
+  const after = await p.read(`({ headshot: !document.getElementById('hit-label').classList.contains('hidden'), hit: document.getElementById('crosshair').classList.contains('hit'), dead: __game.characters.list.find((c) => c.id === ${Number(id)})?.state === 'dead', mag: __game.combat.arsenal.ammo.pistol.mag })`);
+  return { fired: true, ...after, shots: before - after.mag };
+}
 
 const TESTS = {
   async title(t) {
@@ -519,6 +578,207 @@ const TESTS = {
     const size = await p.read('({ w: __game.renderer.domElement.width, h: __game.renderer.domElement.height, aspect: __game.camera.aspect })');
     t.check('the view follows a window resize', Math.abs(size.aspect - 1000 / 620) < 0.01, size);
     await session.cdp.send('Emulation.setDeviceMetricsOverride', { width: p.width, height: p.height, deviceScaleFactor: 1, mobile: false });
+  },
+
+  async taxiFare(t) {
+    const p = t.player;
+    await startNewGame(p);
+    let cab = null;
+    for (let attempt = 0; attempt < 4 && !cab; attempt += 1) {
+      const car = await stealCar(p, "v.type === 'taxi'", 3);
+      let s = await snapshot(p);
+      if (car && s.inCar && s.car.type !== 'taxi') {
+        // F took the car in the next lane: get out, step right up to the cab's door, try again.
+        await p.tap('KeyF');
+        await sleep(800);
+        await walkTo(p, async () => (await carById(p, car.id))?.door, { radius: 0.6, timeoutMs: 6000 });
+        await p.tap('KeyF');
+        await sleep(500);
+        s = await snapshot(p);
+      }
+      if (car && s.inCar && s.car.type === 'taxi') cab = car;
+      else if (s.inCar) {
+        await p.tap('KeyF');
+        await sleep(800);
+      }
+    }
+    t.check('took a Sunny Cab', Boolean(cab), cab && cab.name);
+    if (!cab) return;
+    if ((await snapshot(p)).wanted > 0) {
+      // Taking a cab from its driver earns a star: shake the police off first.
+      t.check('the cab says to lose the police before fares', /lose the police/i.test((await snapshot(p)).help), (await snapshot(p)).help);
+      await escape(p, null, (line) => console.log(`    ${line}`), { anyStep: true });
+      let s = await snapshot(p);
+      if (s.inCar && s.car.type !== 'taxi') return t.check('still in the cab after losing the police', false, s.car.type);
+      if (!s.inCar) return t.check('still in the cab after losing the police', false, s.fate);
+      await p.hold('KeyS', 1200);
+    }
+    const before = await p.read('({ money: __game.progress.money, fares: __game.progress.stats.fares })');
+    await p.tap('KeyT');
+    await sleep(400);
+    let m = await missionState(p);
+    t.check('T starts a fare', m.id === 'taxiFare', `${m.id} wanted ${m.wanted} car ${await p.read('__game.player.character.vehicle?.type')}`);
+    if (m.id !== 'taxiFare') return;
+    // Pull up in the road beside the waiting fare, in the lane on the far side of the street, and
+    // stop there, as a driver does: no mounting the sidewalk.
+    const pickup = m.place;
+    const pulled = await pullUpAcross(p, pickup);
+    t.check('drove to the waiting fare', pulled.arrived, pulled.reason);
+    const boarded = await p.waitFor("/Drive the passenger/.test(__game.missions.objectiveText())", 12000, 200);
+    m = await missionState(p);
+    t.check('stopping across the street picks the fare up', boarded, `${m.objective} at ${pulled.gap} m`);
+    if (!boarded) return;
+    await p.screenshot('tmp/tests/taxi-aboard.jpg');
+    const dropOff = m.place;
+    const arrived = await pullUpAcross(p, dropOff);
+    t.check('drove the passenger across town', arrived.arrived, arrived.reason);
+    const paid = await p.waitFor("__game.progress.stats.fares > 0", 10000, 200);
+    const after = await p.read('({ money: __game.progress.money, fares: __game.progress.stats.fares })');
+    t.check('stopping at the far curb ends the fare', paid && after.fares === before.fares + 1, `fares ${before.fares} -> ${after.fares} at ${arrived.gap} m`);
+    t.check('and the fare is paid', after.money > before.money, `$${before.money} -> $${after.money}`);
+    const walker = await p.read("__game.characters.list.some((c) => c.kind === 'pedestrian' && c.brain && Math.hypot(c.x - __game.player.character.x, c.z - __game.player.character.z) < 6)");
+    t.check('the passenger gets out and walks off', walker);
+    await sleep(1500);
+    t.check('the next fare is offered at once', (await missionState(p)).id === 'taxiFare');
+    await p.screenshot('tmp/tests/taxi-done.jpg');
+  },
+
+  async loseCopsInCruiser(t) {
+    const p = t.player;
+    await startNewGame(p);
+    const found = await p.waitFor("__game.vehicles.list.some((v) => v.type === 'police' && v.driver)", 20000, 500);
+    t.check('a police patrol is around', found);
+    if (!found) return;
+    t.check('got a car to reach the patrol', Boolean(await stealCar(p)));
+    const patrol = await nearestCar(p, "v.type === 'police' && v.driver");
+    const reached = await driveRoute(p, async () => carById(p, patrol.id), { radius: 18, timeoutMs: 60000, cruise: 18 });
+    t.check('drove up to the patrol', reached.arrived, reached.reason);
+    await p.hold('KeyS', 800);
+    await p.tap('KeyF');
+    await sleep(600);
+    const car = await stealCar(p, "v.type === 'police'", 3);
+    let s = await snapshot(p);
+    t.check('F steals the police cruiser', Boolean(car) && s.inCar && s.car.type === 'police', s.car && s.car.type);
+    if (!s.inCar || s.car.type !== 'police') return;
+    t.check('stealing a cruiser brings stars', s.wanted >= 2, s.wanted);
+    // Drive away from every unit, break the line of sight and keep going: the stars must go,
+    // as they would in any other car.
+    const started = Date.now();
+    await escape(p, null, (line) => console.log(`    ${line}`), { anyStep: true });
+    s = await snapshot(p);
+    t.check('the police are lost in a stolen cruiser', s.wanted === 0 && !s.fate, `wanted ${s.wanted} ${s.fate ?? ''} after ${((Date.now() - started) / 1000).toFixed(0)} s, ${s.inCar ? s.car.type : 'on foot'}`);
+    await p.screenshot('tmp/tests/cruiser-escaped.jpg');
+  },
+
+  async headshots(t) {
+    const p = t.player;
+    const log = (line) => console.log(`    ${line}`);
+    await continueFrom(t, PISTOL_SAVE);
+    let s = await snapshot(p);
+    t.check('Continue loads the save with the pistol', s.state === 'playing' && s.weapon === 'pistol', `${s.state} ${s.weapon}`);
+    // Taco Tuesday: Crane's crew in Mercado Plaza, the foes the aim assist used to pull onto the chest.
+    const story = await startNextStory(p, { log });
+    t.check('Lou starts Taco Tuesday', story === 'tacoTuesday', story);
+    if (story !== 'tacoTuesday') return;
+    const begun = Date.now();
+    let m = await missionState(p);
+    while (Date.now() - begun < 120000 && m.active && m.kind !== 'eliminate') {
+      if (m.dialogue) await p.tap('KeyE');
+      else if (m.kind === 'goTo') await travel(p, m.place, { radius: m.radius ?? 5, onFoot: true, log });
+      await sleep(400);
+      m = await missionState(p);
+    }
+    t.check('the crew shows up in the plaza', m.kind === 'eliminate' && m.crew && m.crew.length > 0, m.kind);
+    if (m.kind !== 'eliminate') return;
+    await p.tap('Digit2');
+    let gang = null;
+    for (let attempt = 0; attempt < 14 && !(gang && gang.headshot); attempt += 1) {
+      m = await missionState(p);
+      if (m.kind !== 'eliminate' || m.fate || !m.crew || !m.crew.length) break;
+      // The steadiest one in reach: a brawler throwing punches, or a gunman reeling from a hit.
+      const speeds = await p.read(`Object.fromEntries(__game.characters.list.filter((c) => c.kind === 'gang').map((c) => [c.id, Math.hypot(c.vx, c.vz)]))`);
+      const inReach = m.crew.filter((c) => Math.hypot(c.x - m.x, c.z - m.z) < 26);
+      if (!inReach.length) {
+        await walkTo(p, m.crew[0], { radius: 18, sprint: true, timeoutMs: 4000 });
+        continue;
+      }
+      const target = inReach.reduce((best, c) => (!best || (speeds[c.id] ?? 9) < (speeds[best.id] ?? 9) ? c : best), null);
+      await p.mouseDown('right');
+      await sleep(200);
+      let shot = await shootHead(p, target.id);
+      // A body hit makes a gunman flinch and stand still for a moment: the follow-up goes high.
+      if (shot.fired && shot.hit && !shot.headshot && !shot.dead) shot = await shootHead(p, target.id);
+      await p.mouseUp('right');
+      if (shot.fired) log(`crew ${target.id} (${target.weapon}, ${(speeds[target.id] ?? 0).toFixed(1)} m/s): ${JSON.stringify(shot)}`);
+      if (shot.fired && shot.headshot) gang = shot;
+      await sleep(400);
+    }
+    // Landing a head hit on a crew member that dodges and strafes is up to the aim; when one
+    // lands, that single round must drop him.
+    if (gang) t.check('one pistol round in the head kills a gang member', gang.dead && gang.shots === 1, gang);
+    else log('no head hit landed on the moving crew this run');
+    await p.screenshot('tmp/tests/headshot-gang.jpg');
+    // A passer-by 14-26 m away (beyond the reach where a pointed gun scares people), in plain view.
+    const pickWalker = () => p.read(`(() => { const g = __game, h = g.player.character; let best = null, bestScore = Infinity; for (const c of g.characters.list) { if (c.kind !== 'pedestrian' || !c.active || !c.canAct || !c.brain) continue; const d = Math.hypot(c.x - h.x, c.z - h.z); if (d < 14 || d > 26 || g.collision.segmentBlocked(h.x, h.z, c.x, c.z, 1.8)) continue; const score = Math.hypot(c.vx, c.vz) * 10 + d; if (score < bestScore) { bestScore = score; best = { id: c.id, d, health: c.health }; } } return best; })()`);
+    let civilian = null;
+    for (let attempt = 0; attempt < 8 && !(civilian && civilian.headshot); attempt += 1) {
+      const target = await pickWalker();
+      if (!target) {
+        await p.hold('KeyW', 1500);
+        continue;
+      }
+      await p.mouseDown('right');
+      await sleep(250);
+      const shot = await shootHead(p, target.id);
+      await p.mouseUp('right');
+      if (shot.fired) log(`civilian ${target.id} at ${target.d.toFixed(0)} m: ${JSON.stringify(shot)}`);
+      if (shot.fired && shot.headshot) civilian = shot;
+      await sleep(900);
+    }
+    t.check('a pistol shot on the crosshair hits a head and says HEADSHOT', Boolean(civilian), civilian);
+    if (civilian) t.check('one pistol round in the head kills a civilian', civilian.dead && civilian.shots === 1, civilian);
+    await p.screenshot('tmp/tests/headshot-civilian.jpg');
+  },
+
+  async crowdFlow(t) {
+    const p = t.player;
+    await startNewGame(p);
+    // Stroll up the promenade and along Pier Street while watching every walker in town: anyone
+    // who wants to walk but stays put for more than three seconds is stuck.
+    const watch = `(() => { const g = __game; return g.population.walkers.filter((c) => c.active && c.brain && c.canAct).map((c) => ({ id: c.id, x: c.x, z: c.z, mode: c.brain.mode, wants: c.moveSpeed > 0.3 })); })()`;
+    const tracks = new Map();
+    let worst = { seconds: 0 };
+    const started = Date.now();
+    const route = [['KeyW', 6000], ['KeyA', 1500], ['KeyW', 6000]];
+    let leg = 0;
+    let legEnds = Date.now() + route[0][1];
+    await p.down(route[0][0]);
+    while (Date.now() - started < 50000) {
+      if (leg < route.length && Date.now() > legEnds) {
+        await p.up(route[leg][0]);
+        leg += 1;
+        if (leg < route.length) {
+          await p.down(route[leg][0]);
+          legEnds = Date.now() + route[leg][1];
+        }
+      }
+      const now = Date.now();
+      for (const walker of await p.read(watch)) {
+        const track = tracks.get(walker.id);
+        const walking = walker.wants && ['walk', 'cross', 'wander'].includes(walker.mode);
+        if (!track || !walking || Math.hypot(walker.x - track.x, walker.z - track.z) > 0.5) {
+          tracks.set(walker.id, { x: walker.x, z: walker.z, since: now });
+          continue;
+        }
+        const seconds = (now - track.since) / 1000;
+        if (seconds > worst.seconds) worst = { seconds, id: walker.id, x: walker.x.toFixed(1), z: walker.z.toFixed(1), mode: walker.mode };
+      }
+      await sleep(250);
+    }
+    await p.releaseAll();
+    t.check('walkers kept moving while the town was watched', tracks.size > 20, tracks.size);
+    t.check('no walker stays stuck for more than three seconds', worst.seconds <= 3, worst);
+    await p.screenshot('tmp/tests/crowd.jpg');
   },
 
   async saveAndContinue(t) {

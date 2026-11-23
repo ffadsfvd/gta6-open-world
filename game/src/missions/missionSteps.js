@@ -106,7 +106,7 @@ export function deliver(name, place, text, { radius = 6 } = {}) {
       const player = ctx.game.player.character;
       const vehicle = ctx.vars[name];
       if (vehicle && player.vehicle !== vehicle) return [{ x: vehicle.x, z: vehicle.z, y: vehicle.y + 2.6, type: 'arrow', kind: 'vehicleTarget', color: BLUE }];
-      return [{ x: place.x, z: place.z, type: 'column', kind: 'target', color: YELLOW, radius }];
+      return [{ x: place.x, z: place.z, type: 'column', kind: 'target', color: YELLOW, radius: Math.min(radius, 6) }];
     },
     route: (ctx) => (ctx.game.player.character.vehicle === ctx.vars[name] ? place : ctx.vars[name]),
   };

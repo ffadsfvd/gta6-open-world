@@ -76,7 +76,9 @@ export class ActivityManager {
         return;
       }
     }
-    if (vehicle && vehicle.type === 'taxi' && game.wanted.level === 0) {
+    if (vehicle && vehicle.type === 'taxi' && game.wanted.level > 0) {
+      game.hud.hint('Sunny Cab: lose the police to take fares.', 0.2);
+    } else if (vehicle && vehicle.type === 'taxi') {
       game.hud.hint('Sunny Cab: press <kbd>T</kbd> to pick up fares.', 0.2);
       if (game.input.wasPressed('taxi')) {
         game.missions.start(taxiFare(game, vehicle));

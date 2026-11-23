@@ -13,6 +13,7 @@ export class CombatSystem {
     this.arsenal = new Arsenal();
     this.rng = game.rng.fork(77);
     this.lastPlayerAttack = -10;
+    this.lastShotTime = -10;
     this.fireHold = 0;
     game.events.on('vehicleExploded', (e) => {
       const v = e.vehicle;
@@ -87,8 +88,13 @@ export class CombatSystem {
     const hero = game.player.character;
     const camera = game.camera;
     const aim = camera.getWorldDirection(this.tmp ?? (this.tmp = camera.position.clone()));
-    if (hero.aimYaw !== null) this.assistAim(camera.position, aim, spec.range);
-    const spread = spec.spread * (hero.aimYaw !== null ? 1 : 2.2) * (Math.hypot(hero.vx, hero.vz) > 1 ? 1.6 : 1);
+    // Aim assist only helps a shot that would miss everyone: a crosshair already on a head or
+    // a body keeps exactly what it is on.
+    if (hero.aimYaw !== null && this.rayFrom(camera, hero, aim, spec.range).kind !== 'character') this.assistAim(camera.position, aim, spec.range);
+    // Aimed, standing and not rushing the trigger, the first shot goes where the crosshair is.
+    const steady = hero.aimYaw !== null && Math.hypot(hero.vx, hero.vz) < 1 && game.time - this.lastShotTime > 0.45;
+    const spread = spec.spread * (steady ? 0.25 : hero.aimYaw !== null ? 1 : 2.2) * (Math.hypot(hero.vx, hero.vz) > 1 ? 1.6 : 1);
+    this.lastShotTime = game.time;
     const pellets = spec.pellets ?? 1;
     const dir = this.pelletDir ?? (this.pelletDir = aim.clone());
     hero.recoil = 1;
@@ -103,16 +109,20 @@ export class CombatSystem {
       dir.y += (this.rng.next() - 0.5) * 2 * spread;
       dir.z += (this.rng.next() - 0.5) * 2 * spread;
       dir.normalize();
-      // Start the ray level with the player, not at the camera, so nothing behind them is hit.
-      const toHero = (hero.x - camera.position.x) * dir.x + (hero.z - camera.position.z) * dir.z;
-      const start = Math.max(0, toHero);
-      const ox = camera.position.x + dir.x * start;
-      const oy = camera.position.y + dir.y * start;
-      const oz = camera.position.z + dir.z * start;
-      const hit = castBullet(game, ox, oy, oz, dir.x, dir.y, dir.z, spec.range, hero);
+      const hit = this.rayFrom(camera, hero, dir, spec.range);
       const muzzle = this.muzzleOf(hero, Math.atan2(dir.x, dir.z));
       this.resolveShot(hero, hit, spec.damage, { x: dir.x, y: dir.y, z: dir.z }, muzzle, pellet > 0);
     }
+  }
+
+  /** A bullet along `dir` from the camera, started level with the player so nothing behind him is hit. */
+  rayFrom(camera, hero, dir, range) {
+    const toHero = (hero.x - camera.position.x) * dir.x + (hero.z - camera.position.z) * dir.z;
+    const start = Math.max(0, toHero);
+    const ox = camera.position.x + dir.x * start;
+    const oy = camera.position.y + dir.y * start;
+    const oz = camera.position.z + dir.z * start;
+    return castBullet(this.game, ox, oy, oz, dir.x, dir.y, dir.z, range, hero);
   }
 
   muzzleOf(character, yaw) {
@@ -192,7 +202,7 @@ export class CombatSystem {
     }
     if (hit.kind === 'none') return;
     game.events.emit('bulletImpact', { kind: hit.kind, x: hit.x, y: hit.y, z: hit.z, dx: dir.x, dz: dir.z });
-    if (hit.kind === 'character') this.hurt(hit.character, damage * (hit.head ? 2.4 : 1), shooter, 'gun', dir);
+    if (hit.kind === 'character') this.hurt(hit.character, this.bulletDamage(shooter, hit, damage), shooter, 'gun', dir, hit.head);
     else if (hit.kind === 'vehicle') {
       // NPC fire wears a getaway car down slowly; the player's shots wreck cars quickly.
       hit.vehicle.damage(damage * (shooter.kind === 'player' ? 1.7 : 0.4), shooter);
@@ -200,7 +210,22 @@ export class CombatSystem {
     }
   }
 
-  hurt(victim, amount, attacker, kind, dir = null) {
+  /**
+   * What one bullet does to a person. A pistol or rifle round in the head drops any civilian or
+   * gang member on the spot; an officer's helmet and vest leave him alive, but the head still
+   * takes three body shots' worth. Any other head hit counts 2.4 times.
+   */
+  bulletDamage(shooter, hit, damage) {
+    if (!hit.head) return damage;
+    const victim = hit.character;
+    const spec = WEAPONS[shooter.weapon];
+    if (shooter.kind === 'player' && spec && spec.headshot === 'lethal') {
+      return victim.kind === 'police' ? damage * 3 : victim.health + victim.armour + 1;
+    }
+    return damage * 2.4;
+  }
+
+  hurt(victim, amount, attacker, kind, dir = null, head = false) {
     const game = this.game;
     // Mid-roll, bullets and fists whistle past.
     if (victim.dodging > 0.08 && (kind === 'gun' || kind === 'melee')) return false;
@@ -215,8 +240,8 @@ export class CombatSystem {
       victim.vx = dir.x * 2.5;
       victim.vz = dir.z * 2.5;
     }
-    game.events.emit('characterHurt', { victim, attacker, amount, kind });
-    if (killed) game.events.emit('characterKilled', { victim, attacker, weapon: kind });
+    game.events.emit('characterHurt', { victim, attacker, amount, kind, head });
+    if (killed) game.events.emit('characterKilled', { victim, attacker, weapon: kind, head });
     return killed;
   }
 

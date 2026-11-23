@@ -1,7 +1,9 @@
 // A pedestrian's mind: stroll the sidewalk loop, wait for the lights and cross at the zebra,
 // wander the plaza, raise hands when a gun is pointed at them, flee from gunfire, crashes and
-// explosions, and sometimes swing back at whoever punched them.
+// explosions, and sometimes swing back at whoever punched them. On the way they step around
+// whoever is in front of them (see crowdSteering.js) instead of walking into them.
 import { cornerPoint, crossingsFrom, nearestCorner } from './sidewalkPaths.js';
+import { CrowdSteering } from './crowdSteering.js';
 import { distance2D } from '../core/mathUtils.js';
 import { blockBounds } from '../world/cityPlan.js';
 
@@ -24,6 +26,7 @@ export class PedestrianBrain {
     this.plaza = spot.plaza ?? false;
     this.area = spot.area ?? null;
     this.braveness = rng.next();
+    this.steering = new CrowdSteering();
     if (!this.clockwise) this.corner = (this.corner + 3) % 4;
     this.setCornerTarget();
     if (this.area) {
@@ -68,6 +71,7 @@ export class PedestrianBrain {
   resumeWalking() {
     const character = this.character;
     character.handsUp = false;
+    this.steering.reset();
     if (this.area) {
       this.mode = 'wander';
       this.timer = Infinity;
@@ -172,7 +176,9 @@ export class PedestrianBrain {
     }
     const dx = this.target.x - character.x;
     const dz = this.target.z - character.z;
-    if (dx * dx + dz * dz < ARRIVE * ARRIVE) {
+    // A corner already taken by someone waiting for the lights counts as reached from close by.
+    const arrive = this.steering.detours > 0 ? 2.2 : ARRIVE;
+    if (dx * dx + dz * dz < arrive * arrive) {
       if (this.mode === 'cross') {
         this.bx = this.crossing.bx;
         this.bz = this.crossing.bz;
@@ -188,6 +194,22 @@ export class PedestrianBrain {
       }
       return;
     }
-    character.setMove(dx, dz, this.mode === 'cross' ? this.walkSpeed * 1.25 : this.walkSpeed);
+    const speed = this.mode === 'cross' ? this.walkSpeed * 1.25 : this.walkSpeed;
+    const move = this.steering.steer(character, world.characters.list, dx, dz, speed, dt);
+    character.setMove(move.x, move.z, move.speed);
+    // Boxed in time after time on a sidewalk: give up on this way and walk back round the block;
+    // on the beach or the plaza, a spot that cannot be reached is swapped for another.
+    if (move.blocked >= 4 && this.mode === 'walk') this.turnBack();
+    else if (move.blocked >= 2 && this.mode === 'wander') {
+      this.pickWanderTarget();
+      this.steering.reset();
+    }
+  }
+
+  turnBack() {
+    this.corner = this.clockwise ? (this.corner + 3) % 4 : (this.corner + 1) % 4;
+    this.clockwise = !this.clockwise;
+    this.setCornerTarget();
+    this.steering.reset();
   }
 }

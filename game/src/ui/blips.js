@@ -7,8 +7,9 @@ const CONTACT_COLORS = { lou: '#ff7aa2', juno: '#2ec4b6', voss: '#8d99ae' };
 export function collectBlips(game) {
   const blips = [];
   const flash = Math.floor(game.time * 6) % 2 === 0;
+  const own = game.player.character.vehicle;
   for (const vehicle of game.vehicles.list) {
-    if (vehicle.type !== 'police' || !vehicle.active || vehicle.destroyed) continue;
+    if (vehicle.type !== 'police' || vehicle === own || !vehicle.active || vehicle.destroyed) continue;
     if (!vehicle.siren && game.wanted.level === 0) continue;
     blips.push({ x: vehicle.x, z: vehicle.z, kind: 'police', color: flash ? '#ff2d3a' : '#2f6bff', size: 5 });
   }

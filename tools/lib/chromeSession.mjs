@@ -274,7 +274,7 @@ export class Player {
  * window (closest to how people play); the default headless mode still grants pointer lock
  * to trusted clicks when focus is emulated.
  */
-export async function openGame({ query = '', headless = true, width = 1280, height = 720, servePort = 8131, debugPort = 9341, profileDir = null } = {}) {
+export async function openGame({ query = '', headless = true, width = 1280, height = 720, servePort = Number(process.env.TEST_SERVE_PORT) || 8131, debugPort = Number(process.env.TEST_DEBUG_PORT) || 9341, profileDir = null } = {}) {
   const server = spawn(process.execPath, [join(SERVE_ROOT, 'serve.ts'), '--port', String(servePort)], { stdio: 'ignore' });
   // A kept profile keeps localStorage, so a later run can Continue a saved game.
   const profile = profileDir ? resolve(ROOT, profileDir) : mkdtempSync(join(tmpdir(), 'game-input-'));

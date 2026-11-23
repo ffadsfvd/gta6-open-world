@@ -211,7 +211,7 @@ async function ram(player, log) {
 }
 
 /** Drives away from the police and keeps going until the stars are gone. */
-async function escape(player, graph, log, { anyStep = false } = {}) {
+export async function escape(player, graph, log, { anyStep = false } = {}) {
   const started = Date.now();
   while (Date.now() - started < 180000) {
     const s = await missionState(player);

@@ -1,5 +1,5 @@
 // Instant bullets: the nearest hit along a ray among walls, people (legs, chest and head
-// spheres) and cars (their boxes in each car's own frame).
+// spheres scaled to each build) and cars (their boxes in each car's own frame).
 
 function raySphere(ox, oy, oz, dx, dy, dz, cx, cy, cz, radius) {
   const lx = ox - cx;
@@ -59,9 +59,12 @@ export function castBullet(game, ox, oy, oz, dx, dy, dz, range, shooter) {
     const across = Math.abs(cx * dz - cz * dx);
     if (across > 1.4) continue;
     const lying = character.state === 'down' || character.state === 'dead';
+    // Hit spheres follow each person's build, so the head sphere sits on the head of a tall
+    // man and of a short woman alike; the chest and head spheres do not overlap.
+    const h = character.appearance && character.appearance.build ? character.appearance.build.height : 1;
     const spheres = lying
       ? [[0, 0.25, 0, 0.55, false]]
-      : [[0, 0.55, 0, 0.3, false], [0, 1.2, 0, 0.33, false], [0, 1.68, 0, 0.17, true]];
+      : [[0, 0.5 * h, 0, 0.3, false], [0, 1.15 * h, 0, 0.3, false], [0, 1.65 * h, 0, 0.16 * h, true]];
     for (const [sx, sy, sz, radius, head] of spheres) {
       const t = raySphere(ox, oy, oz, dx, dy, dz, character.x + sx, character.y + sy, character.z + sz, radius);
       if (t !== null && t < best.distance) best = { kind: 'character', distance: t, character, head };

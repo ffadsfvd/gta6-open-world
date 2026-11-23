@@ -9,6 +9,8 @@ const SEARCH_RADIUS = [0, 45, 60, 80, 100, 120];
 const SEARCH_AREA_RATE = 0.4;
 const SIGHT_RANGE = 90;
 const CLOSE_RANGE = 22;
+/** How much farther officers spot a suspect driving a stolen cruiser. */
+const STOLEN_CRUISER_SIGHT = 1.25;
 
 export class WantedSystem {
   constructor(game) {
@@ -72,11 +74,12 @@ export class WantedSystem {
     return this.level > 0 && this.unseen > 2;
   }
 
-  /** Distance from (x, z) to the nearest police officer or patrol car. */
+  /** Distance from (x, z) to the nearest police officer or patrol car (never the one Kai drives). */
   nearestCop(x, z) {
     let best = Infinity;
+    const own = this.game.player.character.vehicle;
     for (const vehicle of this.game.vehicles.list) {
-      if (vehicle.type !== 'police' || !vehicle.active || vehicle.destroyed) continue;
+      if (vehicle.type !== 'police' || vehicle === own || !vehicle.active || vehicle.destroyed) continue;
       best = Math.min(best, Math.hypot(vehicle.x - x, vehicle.z - z));
     }
     for (const person of this.game.characters.list) {
@@ -139,13 +142,17 @@ export class WantedSystem {
     if (game.helicopter && game.helicopter.seesPlayer) return true;
     const px = player.x;
     const pz = player.z;
+    // A stolen cruiser stands out: officers pick it out from farther away. The cruiser Kai sits
+    // in is no witness of its own, so out of sight still means out of sight.
+    const own = player.vehicle;
+    const range = own && own.type === 'police' ? SIGHT_RANGE * STOLEN_CRUISER_SIGHT : SIGHT_RANGE;
     const look = (x, z) => {
       const d = Math.hypot(x - px, z - pz);
       if (d < CLOSE_RANGE) return true;
-      return d < SIGHT_RANGE && !game.collision.segmentBlocked(x, z, px, pz, 3);
+      return d < range && !game.collision.segmentBlocked(x, z, px, pz, 3);
     };
     for (const vehicle of game.vehicles.list) {
-      if (vehicle.type === 'police' && vehicle.active && !vehicle.destroyed && vehicle.driver && look(vehicle.x, vehicle.z)) return true;
+      if (vehicle.type === 'police' && vehicle !== own && vehicle.active && !vehicle.destroyed && vehicle.driver && look(vehicle.x, vehicle.z)) return true;
     }
     for (const person of game.characters.list) {
       if (person.kind === 'police' && person.active && person.canAct && look(person.x, person.z)) return true;

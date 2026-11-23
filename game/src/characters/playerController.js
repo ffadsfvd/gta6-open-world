@@ -7,7 +7,8 @@ import { PedestrianBrain } from '../ai/pedestrianBrain.js';
 import { nearestCorner } from '../ai/sidewalkPaths.js';
 import { groundHeight } from '../world/terrain.js';
 
-const ENTER_RANGE = 4.5;
+/** How far from a car's body F still reaches it (metres). */
+const ENTER_REACH = 2.4;
 const DODGE_TIME = 0.55;
 const DODGE_SPEED = 8.5;
 
@@ -104,7 +105,7 @@ export class PlayerController {
   tryEnterVehicle() {
     const game = this.game;
     const character = this.character;
-    const vehicle = game.vehicles.nearest(character.x, character.z, ENTER_RANGE, (v) => !v.destroyed && v.sinking === 0 && v.driver !== character);
+    const vehicle = this.vehicleWithinReach();
     if (!vehicle) return false;
     if (vehicle.locked) {
       game.events.emit('notice', { text: 'This vehicle is locked.' });
@@ -116,6 +117,27 @@ export class PlayerController {
     this.enterVehicle(vehicle);
     game.events.emit('vehicleEntered', { vehicle, jacked: Boolean(victim), victim, parked });
     return true;
+  }
+
+  /**
+   * The car Kai means when he presses F: the one whose body is nearest to him, so standing at a
+   * cab's door gets the cab even when the centre of the car beside it is closer.
+   */
+  vehicleWithinReach() {
+    const character = this.character;
+    let best = null;
+    let bestGap = ENTER_REACH;
+    for (const vehicle of this.game.vehicles.list) {
+      if (!vehicle.active || vehicle.destroyed || vehicle.sinking !== 0 || vehicle.driver === character) continue;
+      if (Math.abs(vehicle.x - character.x) > 8 || Math.abs(vehicle.z - character.z) > 8) continue;
+      const local = vehicle.worldToLocal(character.x, character.z);
+      const gap = Math.hypot(Math.max(0, Math.abs(local.x) - vehicle.halfWidth), Math.max(0, Math.abs(local.z) - vehicle.halfLength));
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = vehicle;
+      }
+    }
+    return best;
   }
 
   /** Pulls an NPC driver out; they become a frightened pedestrian. */

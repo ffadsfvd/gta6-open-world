@@ -56,18 +56,29 @@ export class Hud {
     this.lastWeapon = null;
     this.helpText = '';
     this.helpTimer = 0;
-    // Hit feedback: the crosshair flashes on every hit Kai lands, and turns into an X on a kill.
+    // Hit feedback: the crosshair flashes on every hit Kai lands, and turns into an X on a kill;
+    // a head hit turns it gold and flashes HEADSHOT beside it.
     this.hitTimer = 0;
+    this.hitLabel = el('hit-label');
     game.events.on('characterHurt', (e) => {
       if (!e.attacker || e.attacker.kind !== 'player' || e.kind !== 'gun') return;
-      this.hitTimer = 0.14;
+      this.hitTimer = Math.max(this.hitTimer, e.head ? 0.5 : 0.14);
       this.crosshair.classList.add('hit');
+      if (e.head) this.flagHeadshot();
     });
     game.events.on('characterKilled', (e) => {
       if (!e.attacker || e.attacker.kind !== 'player') return;
-      this.hitTimer = 0.4;
+      this.hitTimer = Math.max(this.hitTimer, e.head ? 0.8 : 0.4);
       this.crosshair.classList.add('hit', 'kill');
+      if (e.head) this.flagHeadshot();
     });
+  }
+
+  flagHeadshot() {
+    this.crosshair.classList.add('headshot');
+    this.hitLabel.classList.remove('hidden', 'pop');
+    void this.hitLabel.offsetWidth;
+    this.hitLabel.classList.add('pop');
   }
 
   show(visible) {
@@ -183,7 +194,10 @@ export class Hud {
     this.crosshair.classList.toggle('hidden', !(player.aimYaw !== null && !vehicle));
     if (this.hitTimer > 0) {
       this.hitTimer -= dt;
-      if (this.hitTimer <= 0) this.crosshair.classList.remove('hit', 'kill');
+      if (this.hitTimer <= 0) {
+        this.crosshair.classList.remove('hit', 'kill', 'headshot');
+        this.hitLabel.classList.add('hidden');
+      }
     }
     const input = game.input;
     this.lockHint.classList.toggle('hidden', game.state !== 'playing' || !input.wantsLock || input.pointerLocked || game.shop.isOpen);
