@@ -2,10 +2,10 @@
 // MISSION PASSED, with real keys and mouse only. One mission is failed on purpose and retried.
 // A death or arrest along the way is retried too, as a player would. Screenshots of each new
 // objective go to tmp/story/.
-//   node tools/story-playthrough.mjs [--headful] [--missions 3] [--fail paperTrail]
+//   node tools/story-playthrough.mjs [--headful] [--missions 3] [--fail paperTrail] [--from 5]
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { openGame, sleep } from './lib/chromeSession.mjs';
+import { openGame, reloadGame, sleep } from './lib/chromeSession.mjs';
 import { startNewGame, stealCar } from './lib/playerBot.mjs';
 import { loadStreetGraph } from './lib/navigator.mjs';
 import { missionState, playMission, startNextStory, travel } from './lib/missionBot.mjs';
@@ -21,6 +21,20 @@ const failOnPurpose = argument('--fail', 'paperTrail');
 const logFile = argument('--log');
 const profileDir = argument('--profile');
 const resume = process.argv.includes('--continue');
+// --from N: start from a saved career with the first N story missions done (loaded with Continue).
+const from = Number(argument('--from', '0'));
+const STORY_IDS = ['backInTheSun', 'paintJob', 'tacoTuesday', 'paperTrail', 'badgeTrouble', 'strandSprint', 'undercurrent'];
+
+/** The save a player would have after the first `done` story missions, at the safehouse. */
+function careerSave(done) {
+  const owned = { fists: true, pistol: done >= 2, smg: done >= 5 };
+  return {
+    version: 1, savedAt: 1795000000000, hour: 15,
+    progress: { money: 2000 + done * 1500, completed: STORY_IDS.slice(0, done), storyIndex: done, unlocks: { pistol: done >= 2, armour: done >= 3, smg: done >= 5 }, shells: [], stats: {} },
+    arsenal: { current: done >= 5 ? 'smg' : done >= 2 ? 'pistol' : 'fists', owned, ammo: { pistol: { mag: 12, reserve: done >= 2 ? 60 : 0 }, smg: { mag: done >= 5 ? 30 : 0, reserve: done >= 5 ? 120 : 0 } } },
+    hero: { health: 100, armour: done >= 3 ? 100 : 0, x: 231, z: 40 },
+  };
+}
 if (logFile) mkdirSync(dirname(logFile), { recursive: true });
 const session = await openGame({ headless, profileDir });
 const player = session.player;
@@ -34,7 +48,16 @@ const results = [];
 let shot = 0;
 
 try {
-  if (resume && !(await player.read("document.querySelector('#start-screen .menu-list button').disabled"))) {
+  if (from > 0) {
+    // A career part-way through the story, loaded the way a returning player does.
+    await player.read(`localStorage.setItem('ondaluz.save.v1', ${JSON.stringify(JSON.stringify(careerSave(from)))})`);
+    await reloadGame(session);
+    await sleep(500);
+    await player.clickElement('#start-screen .menu-list button:nth-of-type(1)');
+    await sleep(800);
+    if (!(await player.read('Boolean(document.pointerLockElement)'))) await player.click();
+    log(`continued a career with ${from} story missions done`);
+  } else if (resume && !(await player.read("document.querySelector('#start-screen .menu-list button').disabled"))) {
     // Continue the autosave from an earlier run, the way a returning player does.
     await player.clickElement('#start-screen .menu-list button:nth-of-type(1)');
     await sleep(800);

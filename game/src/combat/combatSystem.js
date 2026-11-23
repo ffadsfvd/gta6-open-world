@@ -202,8 +202,11 @@ export class CombatSystem {
     }
     if (hit.kind === 'none') return;
     game.events.emit('bulletImpact', { kind: hit.kind, x: hit.x, y: hit.y, z: hit.z, dx: dir.x, dz: dir.z });
-    if (hit.kind === 'character') this.hurt(hit.character, this.bulletDamage(shooter, hit, damage), shooter, 'gun', dir, hit.head);
-    else if (hit.kind === 'vehicle') {
+    if (hit.kind === 'character') {
+      const killed = this.hurt(hit.character, this.bulletDamage(shooter, hit, damage), shooter, 'gun', dir, hit.head);
+      // What the player's last round did, for the hit markers and anyone checking them.
+      if (shooter.kind === 'player') this.lastPlayerHit = { id: hit.character.id, kind: hit.character.kind, head: Boolean(hit.head), killed, time: game.time };
+    } else if (hit.kind === 'vehicle') {
       // NPC fire wears a getaway car down slowly; the player's shots wreck cars quickly.
       hit.vehicle.damage(damage * (shooter.kind === 'player' ? 1.7 : 0.4), shooter);
       game.events.emit('vehicleShot', { vehicle: hit.vehicle, shooter });

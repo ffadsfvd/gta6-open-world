@@ -119,7 +119,7 @@ export async function travel(player, goal, { radius = 6, onFoot = false, graph, 
 async function fight(player, log) {
   await ensureOnFoot(player);
   let s = await missionState(player);
-  const gun = s.owned.smg && (s.ammo.smg.mag + s.ammo.smg.reserve) > 0 ? 'Digit3' : s.owned.pistol && (s.ammo.pistol.mag + s.ammo.pistol.reserve) > 0 ? 'Digit2' : 'Digit1';
+  const gun = s.owned.smg && (s.ammo.smg.mag + s.ammo.smg.reserve) > 0 ? 'Digit4' : s.owned.pistol && (s.ammo.pistol.mag + s.ammo.pistol.reserve) > 0 ? 'Digit2' : 'Digit1';
   await player.tap(gun);
   const started = Date.now();
   let lastReport = 0;
@@ -148,7 +148,7 @@ async function fight(player, log) {
     const live = await personById(player, target.id);
     if (live && live.state !== 'dead') {
       await aimAt(player, { x: live.x, y: (await player.read(`__game.characters.list.find((c) => c.id === ${target.id})?.y ?? 0`)) + 1.25, z: live.z });
-      if (gun === 'Digit3') {
+      if (gun === 'Digit4') {
         await player.mouseDown('left');
         await sleep(260);
         await player.mouseUp('left');
@@ -157,7 +157,7 @@ async function fight(player, log) {
       }
     }
     const ammo = (await missionState(player)).ammo;
-    const current = gun === 'Digit3' ? ammo.smg : ammo.pistol;
+    const current = gun === 'Digit4' ? ammo.smg : ammo.pistol;
     if (current && current.mag === 0 && current.reserve === 0) {
       await player.mouseUp('right');
       if (log) log('out of ammo: fists');

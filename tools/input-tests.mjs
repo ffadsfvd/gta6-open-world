@@ -28,6 +28,18 @@ function farLaneBeside(spot) {
   return { x: clamp(spot.x), z: clamp(lz - Math.sign(spot.z - lz || 1) * 3.5) };
 }
 
+/** Brakes with S until the car Kai drives is down to `speed` m/s (or a few seconds pass). */
+async function slowTo(p, speed, timeoutMs = 4000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const now = await p.read('(() => { const v = __game.player.character.vehicle; return v ? v.forwardSpeed : 0; })()');
+    if (now <= speed) break;
+    await p.down('KeyS');
+    await sleep(50);
+  }
+  await p.up('KeyS');
+}
+
 /** Drives along the streets to the far lane beside `spot` and stops there with the handbrake. */
 async function pullUpAcross(p, spot) {
   const lane = farLaneBeside(spot);
@@ -133,11 +145,13 @@ async function shootHead(p, id) {
     if (!point || point.state === 'dead') return { fired: false };
     await aimAt(p, point, { tolerance: 0.003, tries: 5 });
   }
-  const before = await p.read('__game.combat.arsenal.ammo.pistol.mag');
+  const before = await p.read("({ mag: __game.combat.arsenal.ammo.pistol.mag, last: __game.combat.lastPlayerHit ? __game.combat.lastPlayerHit.time : -1 })");
   await p.click(p.mouse.x, p.mouse.y, 'left', 40);
   await sleep(50);
-  const after = await p.read(`({ headshot: document.getElementById('hit-label') ? !document.getElementById('hit-label').classList.contains('hidden') : false, hit: document.getElementById('crosshair').classList.contains('hit'), dead: __game.characters.list.find((c) => c.id === ${Number(id)})?.state === 'dead', mag: __game.combat.arsenal.ammo.pistol.mag })`);
-  return { fired: true, ...after, shots: before - after.mag };
+  const after = await p.read(`({ label: document.getElementById('hit-label') ? !document.getElementById('hit-label').classList.contains('hidden') : false, hit: document.getElementById('crosshair').classList.contains('hit'), mag: __game.combat.arsenal.ammo.pistol.mag, last: __game.combat.lastPlayerHit ?? null })`);
+  // The round may find another head than the one aimed at: what counts is who it hit.
+  const struck = after.last && after.last.time > before.last ? after.last : null;
+  return { fired: true, label: after.label, hit: after.hit, shots: before.mag - after.mag, headshot: Boolean(struck && struck.head), victim: struck ? struck.kind : null, killed: Boolean(struck && struck.killed) };
 }
 
 const TESTS = {
@@ -254,8 +268,9 @@ const TESTS = {
     await sleep(400);
     t.check('E leaves the shop', await p.read("document.getElementById('shop-panel').classList.contains('hidden')"));
     if (!(await p.read('Boolean(document.pointerLockElement)'))) await p.click();
+    // Out of the door and back to Mercado Street, wherever the camera ended up facing.
     const from = await snapshot(p);
-    await p.hold('KeyS', 1500);
+    await walkTo(p, { x: shop.x, z: shop.z - 8 }, { radius: 1, timeoutMs: 5000 });
     s = await snapshot(p);
     t.check('and Kai walks away', moved(s, from) > 3, moved(s, from).toFixed(1));
   },
@@ -323,17 +338,22 @@ const TESTS = {
     s = await snapshot(p);
     await p.up('KeyW');
     t.check('a short tap at speed is a lane change, not a swerve', Math.abs(wrap(s.car.yaw - from.car.yaw)) < 0.3 && Math.abs(wrap(s.car.yaw - from.car.yaw)) > 0.02, `${wrap(s.car.yaw - from.car.yaw).toFixed(2)} at ${from.car.speed.toFixed(1)} m/s`);
-    from = s;
+    // Full-lock turns at town speed: flat out on a boulevard they would only end in a shop window.
+    await slowTo(p, 13);
+    from = await snapshot(p);
     await p.hold(['KeyW', 'KeyA'], 900);
     s = await snapshot(p);
     const left = wrap(s.car.yaw - from.car.yaw);
-    t.check('A steers left, and not into a spin', left > 0.15 && left < 1.6, left.toFixed(2));
-    await sleep(400);
+    t.check('A steers left, and not into a spin', left > 0.15 && left < 1.6, `${left.toFixed(2)} from ${from.car.speed.toFixed(1)} m/s`);
+    // Straighten up out of the left turn before trying the other way.
+    await p.hold(['KeyW', 'KeyD'], 700);
+    await sleep(300);
+    await slowTo(p, 13);
     from = await snapshot(p);
     await p.hold(['KeyW', 'KeyD'], 900);
     s = await snapshot(p);
     const right = wrap(s.car.yaw - from.car.yaw);
-    t.check('D steers right, and not into a spin', right < -0.15 && right > -1.6, right.toFixed(2));
+    t.check('D steers right, and not into a spin', right < -0.15 && right > -1.6, `${right.toFixed(2)} from ${from.car.speed.toFixed(1)} m/s`);
     await p.hold('KeyS', 3500);
     s = await snapshot(p);
     t.check('S brakes, then reverses', s.car.forward < -1, s.car.forward.toFixed(1));
@@ -376,11 +396,14 @@ const TESTS = {
     const car = await stealCar(p);
     t.check('got a car', Boolean(car));
     if (!car) return;
-    // Head west into the apartment blocks of Carmine Strand and keep the foot down.
+    // Find the nearest building and drive straight at it with the foot down (the goal lies well
+    // inside it, so the car does not ease off before the wall).
+    const wall = await p.read(`(() => { const v = __game.player.character.vehicle; let best = null; for (const b of __game.collision.query(v.x - 80, v.z - 80, v.x + 80, v.z + 80)) { if (b.top < 4 || b.maxX - b.minX < 6 || b.maxZ - b.minZ < 6) continue; const x = Math.max(b.minX, Math.min(v.x, b.maxX)); const z = Math.max(b.minZ, Math.min(v.z, b.maxZ)); const d = Math.hypot(x - v.x, z - v.z); if (d > 20 && (!best || d < best.d)) best = { x, z, d, ux: (x - v.x) / d, uz: (z - v.z) / d }; } return best; })()`);
+    t.check('a building to crash into', Boolean(wall));
+    if (!wall) return;
+    await driveTo(p, { x: wall.x + wall.ux * 30, z: wall.z + wall.uz * 30 }, { radius: 1, timeoutMs: 7000, cruise: 30 });
+    await p.hold('KeyW', 800);
     let s = await snapshot(p);
-    await driveTo(p, { x: s.x - 60, z: s.z }, { radius: 3, timeoutMs: 6000, cruise: 30 });
-    await p.hold('KeyW', 1500);
-    s = await snapshot(p);
     const health = s.car.health;
     await p.screenshot('tmp/tests/crash-1.jpg');
     // Back out and drive away: the car must not stay stuck in the wall.
@@ -428,9 +451,10 @@ const TESTS = {
     t.check('no police AI takes over the stolen cruiser', s.car.ai === null, s.car.ai);
     t.check('the cruiser answers W', s.car.controls.throttle === 1 && moved(s, from) > 20, moved(s, from).toFixed(1));
     await p.up('KeyW');
-    await p.hold('KeyS', 1200);
+    // Down to town speed before the turn: a cruiser at full chat on the seafront only hits a wall.
+    await slowTo(p, 12);
     await p.down('KeyW');
-    await sleep(1200);
+    await sleep(400);
     s = await snapshot(p);
     await p.down('KeyA');
     await sleep(700);
@@ -494,8 +518,10 @@ const TESTS = {
     const again = await stealCar(p);
     t.check('can steal a car again', Boolean(again));
     if (again) {
+      // Along the street to the next junction, steering round whatever is parked in the way.
       from = await snapshot(p);
-      await p.hold('KeyW', 2500);
+      const junction = await p.read('(() => { const g = __game, h = g.player.character; let best = null; for (const n of g.network.nodes) { const d = Math.hypot(n.x - h.x, n.z - h.z); if (d > 40 && d < 120 && (!best || d < best.d)) best = { x: n.x, z: n.z, d }; } return best; })()');
+      if (junction) await driveRoute(p, junction, { radius: 10, timeoutMs: 20000, cruise: 14 });
       s = await snapshot(p);
       t.check('and drive it', moved(s, from) > 10, moved(s, from).toFixed(1));
     }
@@ -772,36 +798,45 @@ const TESTS = {
       await sleep(200);
       let shot = await shootHead(p, target.id);
       // A body hit makes a gunman flinch and stand still for a moment: the follow-up goes high.
-      if (shot.fired && shot.hit && !shot.headshot && !shot.dead) shot = await shootHead(p, target.id);
+      if (shot.fired && shot.hit && !shot.headshot && !shot.killed) shot = await shootHead(p, target.id);
       await p.mouseUp('right');
       if (shot.fired) log(`crew ${target.id} (${target.weapon}, ${(speeds[target.id] ?? 0).toFixed(1)} m/s): ${JSON.stringify(shot)}`);
-      if (shot.fired && shot.headshot) gang = shot;
+      if (shot.fired && shot.headshot && shot.victim === 'gang') gang = shot;
       await sleep(400);
     }
     // Landing a head hit on a crew member that dodges and strafes is up to the aim; when one
     // lands, that single round must drop him.
-    if (gang) t.check('one pistol round in the head kills a gang member', gang.dead && gang.shots === 1, gang);
+    if (gang) t.check('one pistol round in the head kills a gang member', gang.killed && gang.label && gang.shots === 1, gang);
     else log('no head hit landed on the moving crew this run');
     await p.screenshot('tmp/tests/headshot-gang.jpg');
-    // A passer-by 14-26 m away (beyond the reach where a pointed gun scares people), in plain view.
-    const pickWalker = () => p.read(`(() => { const g = __game, h = g.player.character; let best = null, bestScore = Infinity; for (const c of g.characters.list) { if (c.kind !== 'pedestrian' || !c.active || !c.canAct || !c.brain) continue; const d = Math.hypot(c.x - h.x, c.z - h.z); if (d < 14 || d > 26 || g.collision.segmentBlocked(h.x, h.z, c.x, c.z, 1.8)) continue; const score = Math.hypot(c.vx, c.vz) * 10 + d; if (score < bestScore) { bestScore = score; best = { id: c.id, d, health: c.health }; } } return best; })()`);
+    // A passer-by 8-20 m away in plain view. Pointing a gun at people makes the timid ones freeze
+    // with their hands up: those make a fair target for one careful shot.
+    const pickWalker = () => p.read(`(() => { const g = __game, h = g.player.character; let best = null, bestScore = Infinity; for (const c of g.characters.list) { if (c.kind !== 'pedestrian' || !c.active || !c.canAct || !c.brain) continue; const d = Math.hypot(c.x - h.x, c.z - h.z); if (d < 8 || d > 26 || g.collision.segmentBlocked(h.x, h.z, c.x, c.z, 1.8)) continue; const score = Math.hypot(c.vx, c.vz) * 10 + d; if (score < bestScore) { bestScore = score; best = { id: c.id, d, health: c.health }; } } return best; })()`);
+    const speedOf = (id) => p.read(`(() => { const c = __game.characters.list.find((c) => c.id === ${Number(id)}); return c ? Math.hypot(c.vx, c.vz) : 99; })()`);
     let civilian = null;
-    for (let attempt = 0; attempt < 8 && !(civilian && civilian.headshot); attempt += 1) {
+    for (let attempt = 0; attempt < 12 && !(civilian && civilian.headshot); attempt += 1) {
       const target = await pickWalker();
       if (!target) {
         await p.hold('KeyW', 1500);
         continue;
       }
       await p.mouseDown('right');
-      await sleep(250);
+      await aimAt(p, await p.read(`(() => { const c = __game.characters.list.find((c) => c.id === ${target.id}); return { x: c.x, y: c.y + 1.6, z: c.z }; })()`), { tolerance: 0.02, tries: 3 });
+      await sleep(450);
+      // Walkers keep moving after the gunfight: shoot the still ones first, then anyone.
+      if (attempt < 5 && (await speedOf(target.id)) > 0.8) {
+        await p.mouseUp('right');
+        await sleep(300);
+        continue;
+      }
       const shot = await shootHead(p, target.id);
       await p.mouseUp('right');
       if (shot.fired) log(`civilian ${target.id} at ${target.d.toFixed(0)} m: ${JSON.stringify(shot)}`);
-      if (shot.fired && shot.headshot) civilian = shot;
+      if (shot.fired && shot.headshot && shot.victim === 'pedestrian') civilian = shot;
       await sleep(900);
     }
-    t.check('a pistol shot on the crosshair hits a head and says HEADSHOT', Boolean(civilian), civilian);
-    if (civilian) t.check('one pistol round in the head kills a civilian', civilian.dead && civilian.shots === 1, civilian);
+    t.check('a pistol shot on the crosshair hits a head and says HEADSHOT', Boolean(civilian && civilian.label), civilian);
+    if (civilian) t.check('one pistol round in the head kills a civilian', civilian.killed && civilian.shots === 1, civilian);
     await p.screenshot('tmp/tests/headshot-civilian.jpg');
   },
 
