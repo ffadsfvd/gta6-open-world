@@ -74,6 +74,11 @@ export class WantedSystem {
     return this.level > 0 && this.unseen > 2;
   }
 
+  /** How far along losing the police is: 0 while seen, 1 when the stars go. */
+  get escapeShare() {
+    return this.level > 0 && this.floor === 0 ? Math.min(1, this.unseen / ESCAPE_SECONDS[this.level]) : 0;
+  }
+
   /** Distance from (x, z) to the nearest police officer or patrol car (never the one Kai drives). */
   nearestCop(x, z) {
     let best = Infinity;

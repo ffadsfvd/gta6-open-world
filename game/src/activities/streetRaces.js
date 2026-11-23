@@ -1,6 +1,6 @@
 // Side races: the Wharf Loop around Ironwharf and Mercado, and the Glasswater Circuit through
 // downtown. Start one from its flag in any car; win to take the purse.
-import { race } from '../missions/missionSteps.js';
+import { race } from '../missions/raceStep.js';
 import { OUTFITS } from '../characters/appearance.js';
 
 export const STREET_RACES = [
@@ -42,6 +42,7 @@ export function raceMission(spec) {
   return {
     id: spec.id,
     title: spec.title,
+    kindLabel: 'Street race',
     reward: spec.purse,
     steps: () => [race(spec.route, spec.rivals.map((rival) => ({ ...rival, outfit: OUTFITS.gang })), spec.title)],
     onPass(game) {

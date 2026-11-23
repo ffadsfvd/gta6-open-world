@@ -2,55 +2,45 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<title>Ondaluz Undercurrent — an open-world crime story on a sun-soaked Atlantic coast</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ondaluz Undercurrent</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="./styles/base.css">
 <link rel="stylesheet" href="./styles/hud.css">
+<link rel="stylesheet" href="./styles/hudPanels.css">
 <link rel="stylesheet" href="./styles/menus.css">
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
 <body>
-<canvas id="game-canvas" aria-label="Ondaluz Undercurrent: an open-world crime game in a sun-soaked coastal city"></canvas>
+<canvas id="game-canvas" aria-label="Ondaluz Undercurrent: drive, fight and run from the police in an open coastal city"></canvas>
 <div id="hud" class="hidden">
-  <div id="hud-top-right">
-    <div id="weapon-panel"><span id="weapon-icon"></span><span id="weapon-ammo"></span></div>
-    <div id="money-counter">$0</div>
-    <div id="clock"></div>
-    <div id="wanted-stars"></div>
-    <div id="mission-timer" class="hidden"></div>
-  </div>
-  <div id="help-box" class="hidden"></div>
-  <div id="mission-title" class="hidden"></div>
-  <div id="minimap-frame">
-    <canvas id="minimap-canvas" width="400" height="400"></canvas>
-    <div id="health-bar" class="stat-bar"><i></i><b></b></div>
-    <div id="armour-bar" class="stat-bar"><i></i><b></b></div>
-  </div>
-  <div id="objective-text"></div>
-  <div id="zone-label"></div>
-  <div id="vehicle-panel" class="hidden">
-    <canvas id="speedometer-canvas" width="280" height="180"></canvas>
-    <div id="vehicle-name"></div>
-    <div id="radio-station"></div>
-  </div>
-  <div id="crosshair" class="hidden"></div>
-  <div id="hit-label" class="hidden">HEADSHOT</div>
-  <div id="lock-hint" class="hidden">Click to capture the mouse</div>
-  <div id="toast-stack"></div>
+<div id="hud-left">
+<section id="mission-tracker" class="hud-panel hidden" aria-label="Mission tracker: mission, stage, objective, next step"></section>
+<section id="police-response" class="hud-panel hidden" aria-label="Police response: pursuing units, distance and tactics"></section>
 </div>
+<div id="hud-right">
+<section id="status-panel" aria-label="Money, clock and wanted level"><div id="money-counter">$0</div><div id="clock"></div><div id="wanted-stars"></div></section>
+<section id="rank-progress" class="hud-panel" aria-label="Street rank and respect"></section>
+<section id="weapon-bar" class="hud-panel" aria-label="Weapons owned and locked, with ammunition"></section>
+</div>
+<section id="minimap" aria-label="Minimap with streets, blips and GPS route"><div id="zone-label"></div><canvas id="minimap-canvas" width="400" height="400"></canvas><div id="health-bar" class="stat-bar"><i></i><b></b></div><div id="armour-bar" class="stat-bar"><i></i><b></b></div></section>
+<div id="hud-bottom-right"><div id="radio-now-playing" class="hud-panel hidden" aria-label="Car radio: station and track"></div><section id="vehicle-panel" class="hud-panel hidden" aria-label="Vehicle: name, speed, gear and condition"></section></div>
+<div id="objective-text"></div>
+<div id="help-box" class="hidden"></div>
+<div id="mission-title" class="hidden"></div>
+<div id="crosshair" class="hidden"></div><div id="hit-label" class="hidden">HEADSHOT</div>
+<div id="lock-hint" class="hidden">Click to capture the mouse</div>
+<div id="toast-stack"></div>
+</div>
+<div id="dialogue-box" class="hidden"><canvas id="dialogue-portrait" width="168" height="168"></canvas><div id="dialogue-body"><div id="dialogue-head"><span id="dialogue-name"></span><span id="dialogue-via"></span></div><div id="dialogue-text"></div><div id="dialogue-hint">E / Enter to continue</div></div></div>
+<div id="full-map" class="hidden"><canvas id="full-map-canvas" width="1200" height="1000"></canvas><div id="map-legend"></div></div>
+<div id="pause-menu" class="menu-screen hidden"></div>
+<div id="shop-panel" class="menu-screen hidden"></div>
+<div id="start-screen" class="menu-screen"></div>
 <div id="big-message" class="hidden"><div id="big-message-title"></div><div id="big-message-sub"></div></div>
-<div id="dialogue-box" class="hidden">
-  <canvas id="dialogue-portrait" width="168" height="168"></canvas>
-  <div id="dialogue-body"><div id="dialogue-name"></div><div id="dialogue-text"></div><div id="dialogue-hint">E / Enter to continue</div></div>
-</div>
 <div id="damage-vignette"></div>
 <div id="screen-fade"></div>
 <div id="intro-caption" class="hidden"></div>
-<div id="full-map" class="hidden"><canvas id="full-map-canvas" width="1200" height="1000"></canvas><div id="map-legend"></div></div>
-<div id="shop-panel" class="menu-screen hidden"></div>
-<div id="pause-menu" class="menu-screen hidden"></div>
-<div id="start-screen" class="menu-screen"></div>
 <p id="status" role="status" aria-live="polite"></p>
 <script type="module" src="./src/main.js"></script>
 </body>

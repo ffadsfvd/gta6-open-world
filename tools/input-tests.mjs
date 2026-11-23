@@ -37,6 +37,71 @@ async function pullUpAcross(p, spot) {
   return { ...drove, gap: car ? Math.hypot(car.x - spot.x, car.z - spot.z).toFixed(1) : null };
 }
 
+/**
+ * Reads the HUD's layout: every visible panel and text line as boxes, then reports panels that
+ * overlap, anything outside the window, and single-line texts that wrapped onto a second line.
+ */
+const LAYOUT_PROBE = `(() => {
+  const shown = (el) => { if (!el || !el.isConnected) return false; const s = getComputedStyle(el); if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity) < 0.05) return false; for (let p = el.parentElement; p; p = p.parentElement) { const ps = getComputedStyle(p); if (ps.display === 'none' || Number(ps.opacity) < 0.05) return false; } const r = el.getBoundingClientRect(); return r.width > 1 && r.height > 1; };
+  const panels = ['mission-tracker', 'police-response', 'status-panel', 'rank-progress', 'weapon-bar', 'weapon-panel', 'zone-label', 'minimap-canvas', 'minimap-frame', 'health-bar', 'armour-bar', 'radio-now-playing', 'vehicle-panel', 'objective-text', 'help-box', 'dialogue-box', 'mission-timer'];
+  const boxes = [];
+  for (const id of panels) { const el = document.getElementById(id); if (shown(el)) boxes.push({ id, el, r: el.getBoundingClientRect() }); }
+  for (const el of document.querySelectorAll('#toast-stack .toast')) if (shown(el)) boxes.push({ id: 'toast', el, r: el.getBoundingClientRect() });
+  const problems = [];
+  for (let i = 0; i < boxes.length; i += 1) {
+    const a = boxes[i];
+    if (a.r.left < -1 || a.r.top < -1 || a.r.right > innerWidth + 1 || a.r.bottom > innerHeight + 1) problems.push(a.id + ' leaves the window');
+    for (let j = i + 1; j < boxes.length; j += 1) {
+      const b = boxes[j];
+      if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+      const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+      const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+      if (w > 2 && h > 2) problems.push(a.id + ' overlaps ' + b.id + ' (' + Math.round(w) + 'x' + Math.round(h) + ')');
+    }
+  }
+  const singles = '#zone-label b, #zone-label small, #vehicle-name, #radio-station, .panel-title, .panel-kicker, .unit-list li, .tracker-next, .police-status, .radio-track, .radio-station, .slot-name, .slot-ammo, .rank-respect, .stat-bar b, #money-counter, #clock, .tracker-status div, .condition-row, .stage-row';
+  for (const el of document.querySelectorAll(singles)) {
+    if (!shown(el) || !el.textContent.trim()) continue;
+    // A line that wrapped: one run of text laid out on two rows (mixed font sizes on one row are fine).
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!node.textContent.trim()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const rows = [...range.getClientRects()].filter((r) => r.width > 0.5).map((r) => r.top);
+      if (rows.length > 1 && Math.max(...rows) - Math.min(...rows) > 3) {
+        problems.push((el.id || el.className) + ' wraps: ' + el.textContent.trim().slice(0, 40));
+        break;
+      }
+    }
+  }
+  return { problems, panels: boxes.map((b) => b.id) };
+})()`;
+
+const HUD_SIZES = [[1280, 720], [1366, 768], [1600, 900], [1920, 1080], [2560, 1440]];
+
+/** Checks the HUD at every window size from 1280x720 to 2560x1440 in the state the game is in. */
+async function checkLayout(t, label) {
+  const p = t.player;
+  const cdp = t.session.cdp;
+  for (const [width, height] of HUD_SIZES) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+    await sleep(350);
+    const report = await p.read(LAYOUT_PROBE);
+    t.check(`${label} at ${width}x${height}: no HUD text overlaps or wraps`, report.problems.length === 0, report.problems.length ? report.problems.slice(0, 4) : report.panels.join(' '));
+    if (width === 1280 && height === 720) await p.screenshot(`tmp/tests/layout-${label.replace(/\W+/g, '-')}.jpg`);
+  }
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: p.width, height: p.height, deviceScaleFactor: 1, mobile: false });
+  await sleep(300);
+}
+
+/** Opens a screenshot scene (a staged moment of the real game) in the same browser. */
+async function openScene(t, query) {
+  await t.session.cdp.send('Page.navigate', { url: `${t.session.url.split('?')[0]}${query}` });
+  await sleep(500);
+  return t.player.waitFor('window.__shotReady === true', 90000, 250);
+}
+
 /** A saved game just after Paint Job: Juno's pistol in hand, Taco Tuesday next, early afternoon. */
 const PISTOL_SAVE = {
   version: 1, savedAt: 1795000000000, hour: 13,
@@ -71,7 +136,7 @@ async function shootHead(p, id) {
   const before = await p.read('__game.combat.arsenal.ammo.pistol.mag');
   await p.click(p.mouse.x, p.mouse.y, 'left', 40);
   await sleep(50);
-  const after = await p.read(`({ headshot: !document.getElementById('hit-label').classList.contains('hidden'), hit: document.getElementById('crosshair').classList.contains('hit'), dead: __game.characters.list.find((c) => c.id === ${Number(id)})?.state === 'dead', mag: __game.combat.arsenal.ammo.pistol.mag })`);
+  const after = await p.read(`({ headshot: document.getElementById('hit-label') ? !document.getElementById('hit-label').classList.contains('hidden') : false, hit: document.getElementById('crosshair').classList.contains('hit'), dead: __game.characters.list.find((c) => c.id === ${Number(id)})?.state === 'dead', mag: __game.combat.arsenal.ammo.pistol.mag })`);
   return { fired: true, ...after, shots: before - after.mag };
 }
 
@@ -779,6 +844,26 @@ const TESTS = {
     t.check('walkers kept moving while the town was watched', tracks.size > 20, tracks.size);
     t.check('no walker stays stuck for more than three seconds', worst.seconds <= 3, worst);
     await p.screenshot('tmp/tests/crowd.jpg');
+  },
+
+  async hudLayout(t) {
+    const p = t.player;
+    await startNewGame(p);
+    await p.hold('KeyW', 1200);
+    await checkLayout(t, 'on foot');
+    const car = await stealCar(p);
+    t.check('took a car for the driving HUD', Boolean(car));
+    if (car) {
+      await p.hold('KeyW', 1500);
+      await checkLayout(t, 'in a car');
+    }
+    // Staged moments of the real game with every panel filled: a chase with the police on Kai,
+    // a fight on foot with dialogue, and a street race.
+    for (const [label, query] of [['police chase', '?shot=cover&seed=20261124'], ['plaza fight', '?shot=street&seed=20261124'], ['street race', '?shot=race&seed=20261124']]) {
+      const ready = await openScene(t, query);
+      t.check(`${label} scene is up`, ready);
+      if (ready) await checkLayout(t, label);
+    }
   },
 
   async saveAndContinue(t) {

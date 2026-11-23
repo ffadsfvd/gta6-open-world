@@ -1,5 +1,6 @@
-// Story dialogue at the bottom of the screen: portrait, speaker name and a typewriter line.
-// Lines advance on E or Enter (or by themselves), and the whole exchange resolves a promise.
+// Story dialogue at the bottom of the screen: portrait, speaker name and a typewriter line, on
+// foot or at the wheel (a contact on the phone, dispatch on the police radio). Lines advance on
+// E or Enter (or by themselves), and the whole exchange resolves a promise.
 import { CAST } from '../missions/cast.js';
 import { drawPortrait } from './portraits.js';
 
@@ -11,8 +12,10 @@ export class DialogueBox {
     this.box = document.getElementById('dialogue-box');
     this.portrait = document.getElementById('dialogue-portrait');
     this.name = document.getElementById('dialogue-name');
+    this.viaLabel = document.getElementById('dialogue-via');
     this.text = document.getElementById('dialogue-text');
     this.hint = document.getElementById('dialogue-hint');
+    this.via = null;
     this.queue = [];
     this.current = null;
     this.shown = 0;
@@ -26,9 +29,12 @@ export class DialogueBox {
   }
 
   /** Plays lines [[speaker, text], ...]; resolves when the last one is dismissed. */
-  play(lines, { auto = false } = {}) {
+  play(lines, { auto = false, via = null } = {}) {
     this.queue = lines.map(([speaker, text]) => ({ speaker, text }));
     this.autoAdvance = auto;
+    this.via = via;
+    this.box.classList.toggle('calling', Boolean(via));
+    this.viaLabel.textContent = via === 'phone' ? 'ON THE PHONE' : via === 'radio' ? 'POLICE RADIO' : '';
     this.hint.textContent = auto ? '' : 'E / Enter to continue';
     return new Promise((resolve) => {
       this.done = resolve;

@@ -56,6 +56,7 @@ export function drawSpeedometer(ctx, mph, gear, health) {
   ctx.fillStyle = '#ffd9a8';
   ctx.fillText(`MPH  ·  GEAR ${gear}`, cx, cy + 54);
   ctx.shadowBlur = 0;
+  if (health === null || health === undefined) return;
   // Car health strip.
   ctx.fillStyle = 'rgba(15,12,24,0.55)';
   ctx.fillRect(cx - 50, cy + 64, 100, 6);

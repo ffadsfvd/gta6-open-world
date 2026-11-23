@@ -1,7 +1,7 @@
-// The building blocks of every mission: talk, go somewhere, get in or steal a car, deliver it,
-// take out a crew, chase and wreck a car, grab a pickup, lose the police, race, and timers.
-// A step reports done (true), failure ('fail:reason') or nothing yet.
-import { RaceDriver } from '../ai/raceDriver.js';
+// The building blocks of every mission: talk (in person, on the phone or the police radio), go
+// somewhere, get in or steal a car, deliver it, take out a crew, chase and wreck a car, grab a
+// pickup, lose the police and timers (races are in raceStep.js). A step reports done (true),
+// failure ('fail:reason') or nothing yet, and may give the HUD a few live readouts (status).
 
 const YELLOW = '#ffd23f';
 const RED = '#ff4d5e';
@@ -11,14 +11,20 @@ function near(a, b, radius) {
   return Math.hypot(a.x - b.x, a.z - b.z) < radius;
 }
 
-export function talk(lines, { freeze = true } = {}) {
+/**
+ * Plays dialogue lines. `freeze: false` lets Kai keep driving or running while it plays; `via`
+ * ('phone' or 'radio') shows the speaker calling in rather than standing beside him.
+ */
+export function talk(lines, { freeze = true, via = null } = {}) {
   return {
     kind: 'talk',
     objective: '',
+    lines,
+    via,
     start(ctx) {
       this.done = false;
       if (freeze) ctx.runner.freezePlayer(true);
-      ctx.game.dialogue.play(lines, { auto: !freeze }).then(() => {
+      ctx.game.dialogue.play(lines, { auto: !freeze, via }).then(() => {
         this.done = true;
       });
     },
@@ -56,6 +62,7 @@ export function goTo(place, text, { radius = 5, vehicle = null, clean = false } 
     },
     markers: () => [{ x: place.x, z: place.z, type: 'column', kind: 'target', color: YELLOW, radius: Math.min(radius, 6) }],
     route: () => place,
+    status: (ctx) => [['Distance', `${Math.round(Math.hypot(ctx.game.player.character.x - place.x, ctx.game.player.character.z - place.z))} m`]],
   };
 }
 
@@ -138,6 +145,11 @@ export function eliminate(name, text) {
     route(ctx) {
       return (ctx.vars[name] ?? []).find((m) => m.alive && m.active) ?? null;
     },
+    status(ctx) {
+      const crew = ctx.vars[name] ?? [];
+      const standing = crew.filter((m) => m.alive && m.active).length;
+      return [['Crew standing', `${standing} of ${crew.length}`]];
+    },
   };
 }
 
@@ -161,6 +173,12 @@ export function chase(name, text, { escape = 240, stopShare = 0.3 } = {}) {
       return target ? [{ x: target.x, z: target.z, y: target.y + 3, type: 'arrow', kind: 'target', color: RED }] : [];
     },
     route: (ctx) => ctx.vars[name] ?? null,
+    status(ctx) {
+      const target = ctx.vars[name];
+      if (!target) return [];
+      const player = ctx.game.player.character;
+      return [['Target', `${Math.round(Math.hypot(target.x - player.x, target.z - player.z))} m`], ['Damage', `${Math.round((1 - target.healthShare) * 100)}%`]];
+    },
   };
 }
 
@@ -195,6 +213,7 @@ export function loseCops(text, level = 0, routeTo = null) {
     update: (dt, ctx) => ctx.game.wanted.level === 0,
     markers: () => (routeTo ? [{ x: routeTo.x, z: routeTo.z, type: 'column', kind: 'target', color: YELLOW, radius: 3 }] : []),
     route: () => routeTo,
+    status: (ctx) => [['Wanted', `${ctx.game.wanted.level} stars`], ['Out of sight', `${Math.round(ctx.game.wanted.escapeShare * 100)}%`]],
   };
 }
 
@@ -235,95 +254,4 @@ export function clearTimeLimit() {
   });
 }
 
-/**
- * A checkpoint race against rivals spawned on the grid behind the start. `checkpoints` are
- * world points; `rivals` are { type, paint, skill }.
- */
-export function race(checkpoints, rivals, title) {
-  return {
-    kind: 'race',
-    checkpoints,
-    objective: title,
-    start(ctx) {
-      const game = ctx.game;
-      const player = game.player.character;
-      const car = player.vehicle;
-      const first = checkpoints[0];
-      const heading = car ? car.yaw : Math.atan2(first.x - player.x, first.z - player.z);
-      this.index = 0;
-      this.countdown = 3.5;
-      this.racers = [];
-      const fx = Math.sin(heading);
-      const fz = Math.cos(heading);
-      const px = car ? car.x : player.x;
-      const pz = car ? car.z : player.z;
-      // Grid slots as [metres to the right, metres ahead] of the player.
-      const slots = [[3.6, 0], [0, -8.5], [3.6, -8.5], [0, -17]];
-      rivals.forEach((rival, slot) => {
-        const [right, ahead] = slots[slot % slots.length];
-        const x = px - fz * right + fx * ahead;
-        const z = pz + fx * right + fz * ahead;
-        const vehicle = ctx.runner.spawnVehicle(rival.type, x, z, heading, { paint: rival.paint });
-        const driver = ctx.runner.spawnPerson('npc', x, z, rival.outfit);
-        driver.vehicle = vehicle;
-        vehicle.driver = driver;
-        vehicle.engineOn = true;
-        vehicle.ai = new RaceDriver(vehicle, checkpoints, rival.skill ?? 0.9);
-        this.racers.push(vehicle);
-      });
-      ctx.runner.freezePlayer(true);
-      ctx.game.events.emit('raceCountdown', {});
-    },
-    update(dt, ctx) {
-      const game = ctx.game;
-      if (this.countdown > 0) {
-        const before = Math.ceil(this.countdown);
-        this.countdown -= dt;
-        const after = Math.ceil(this.countdown);
-        if (after !== before) game.notifications.banner(after > 0 ? String(after) : 'GO!', '', '', 0.9);
-        if (this.countdown <= 0) {
-          ctx.runner.freezePlayer(false);
-          for (const racer of this.racers) racer.ai.started = true;
-          game.events.emit('raceStart', {});
-        }
-        return false;
-      }
-      const player = game.player.character;
-      const point = checkpoints[this.index];
-      // Rivals race the car Kai brought: whatever he drives, they are never much faster.
-      const cap = player.vehicle ? player.vehicle.spec.maxSpeed * 1.04 : null;
-      for (const racer of this.racers) {
-        if (!racer.ai) continue;
-        const lead = racer.ai.index - this.index;
-        racer.ai.pace = lead > 1 ? 0.84 : lead > 0 ? 0.93 : lead < -1 ? 1.06 : 1;
-        racer.ai.speedCap = cap;
-      }
-      if (near(player, point, 10)) {
-        this.index += 1;
-        game.events.emit('checkpoint', { index: this.index });
-        if (this.index >= checkpoints.length) {
-          return this.racers.some((racer) => racer.ai && racer.ai.finished) ? 'fail:You lost the race.' : true;
-        }
-      }
-      if (this.racers.some((racer) => racer.ai && racer.ai.finished)) return 'fail:You lost the race.';
-      return false;
-    },
-    objectiveText() {
-      if (this.countdown > 0) return 'Get ready...';
-      const place = 1 + this.racers.filter((racer) => racer.ai && (racer.ai.index > this.index)).length;
-      const suffix = ['st', 'nd', 'rd', 'th'][Math.min(place - 1, 3)];
-      return `${title}: checkpoint *${this.index + 1}/${checkpoints.length}* · position *${place}${suffix}*`;
-    },
-    markers() {
-      const list = [];
-      const current = checkpoints[this.index ?? 0];
-      if (current) list.push({ x: current.x, z: current.z, type: 'checkpoint', kind: 'checkpoint', color: YELLOW, radius: 5 });
-      const next = checkpoints[(this.index ?? 0) + 1];
-      if (next) list.push({ x: next.x, z: next.z, type: 'checkpoint', kind: 'checkpoint', color: '#ffe8a3', radius: 3 });
-      return list;
-    },
-    route() {
-      return checkpoints[Math.min(this.index ?? 0, checkpoints.length - 1)];
-    },
-  };
-}
+// Races live in raceStep.js.

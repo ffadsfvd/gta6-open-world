@@ -10,6 +10,8 @@ export class OfficerBrain {
     this.cooldown = rng.range(0.6, 1.6);
     this.burst = 0;
     this.home = null;
+    /** What the officer is doing, in dispatch words (the HUD's police panel reads it). */
+    this.behaviour = 'On foot';
   }
 
   update(dt, game) {
@@ -42,18 +44,22 @@ export class OfficerBrain {
       officer.setMove(0, 0, 0);
       officer.aimYaw = Math.atan2(target.x - officer.x, target.z - officer.z);
       officer.aimPitch = 0;
+      this.behaviour = 'Aiming';
       if (this.cooldown <= 0 && this.reaction <= 0) {
         const accuracy = Math.min(0.7, 0.25 + wanted.level * 0.08);
         game.combat.fireNpcShot(officer, player, accuracy, 'pistol');
         this.burst += 1;
         this.cooldown = this.burst % 3 === 0 ? this.rng.range(1.6, 2.6) : this.rng.range(0.4, 0.7);
+        this.firedAt = game.time;
       }
+      if (game.time - (this.firedAt ?? -9) < 1.2) this.behaviour = 'Firing';
       return;
     }
     officer.aimYaw = null;
     // Lost sight of him: walk to where he was last seen and look around there.
     const goal = wanted.searching && !sight ? wanted.lastKnown : target;
     const gap = distance2D(officer.x, officer.z, goal.x, goal.z);
+    this.behaviour = goal !== target ? 'Searching on foot' : gap < 3 ? 'Making an arrest' : 'Running you down';
     if (gap > 1.4) officer.setMove(goal.x - officer.x, goal.z - officer.z, goal === target && gap > 6 ? 6.2 : 3.2);
     else {
       officer.setMove(0, 0, 0);

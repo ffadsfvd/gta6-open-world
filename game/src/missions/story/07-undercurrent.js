@@ -1,6 +1,6 @@
 // Story 7 — Undercurrent. Crane's big shipment lands at Lighthouse Point after dark. Kai takes
 // out Crane and his crew, outruns half the Ondaluz Bay Police and meets Lou back at the taco truck.
-import { PLACES } from '../../world/cityPlan.js';
+import { PLACES } from '../../world/places.js';
 import { call, eliminate, goTo, loseCops, talk } from '../missionSteps.js';
 import { OUTFITS } from '../../characters/appearance.js';
 

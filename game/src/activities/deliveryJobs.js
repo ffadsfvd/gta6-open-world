@@ -23,7 +23,13 @@ export function deliveryJob(game) {
   return {
     id: 'delivery',
     title: 'Pelican Express',
+    kindLabel: 'Delivery job',
     reward: 750,
+    status(ctx) {
+      const dropped = ctx.mission.steps.slice(0, Math.max(0, ctx.mission.index)).filter((step) => step.kind === 'deliver').length;
+      const van = ctx.vars.van;
+      return [['Parcels', `${dropped} of ${stops.length} dropped`], ['Van', van ? `${Math.round(van.healthShare * 100)}%` : '-']];
+    },
     steps: () => [
       call((ctx) => {
         ctx.vars.van = ctx.runner.spawnVehicle('van', PLACES.depot.x - 6, PLACES.depot.z - 3.5, Math.PI / 2, { paint: '#ffffff' });

@@ -70,6 +70,13 @@ export class AudioDirector {
     return this.station < 0 ? 'RADIO OFF  ·  N to tune' : `${STATIONS[this.station].name}  ·  N`;
   }
 
+  /** The station and the tune it is playing, for the HUD's now-playing line (null: radio off). */
+  nowPlaying() {
+    if (this.station < 0) return null;
+    const { station, track, artist, name } = STATIONS[this.station];
+    return { station: station ?? name, track, artist };
+  }
+
   nextStation() {
     this.station = this.station + 1 >= STATIONS.length ? -1 : this.station + 1;
     this.sfx.click();

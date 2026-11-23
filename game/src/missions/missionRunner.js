@@ -4,6 +4,9 @@
 import { STORYLINE } from './storyline.js';
 import { CAST, CONTACTS } from './cast.js';
 import { GangBrain } from '../ai/gangBrain.js';
+import { TrafficDriver } from '../ai/trafficDriver.js';
+import { PedestrianBrain } from '../ai/pedestrianBrain.js';
+import { nearestCorner } from '../ai/sidewalkPaths.js';
 import { OUTFITS } from '../characters/appearance.js';
 import { formatMoney } from '../core/mathUtils.js';
 import { groundHeight } from '../world/terrain.js';
@@ -103,6 +106,42 @@ export class MissionRunner {
       person.brain = new GangBrain(person, rng.fork(person.id), { armed, weapon: armed ? member.weapon ?? 'pistol' : 'fists', accuracy: member.accuracy ?? 0.45 });
       return person;
     });
+  }
+
+  /**
+   * A mission car with a driver that pulls out a block or two from `near` and flees through town
+   * along the lanes (the courier in Paper Trail). `fallback` is a lane spot when none is free.
+   */
+  spawnFleeingCar(type, near, { paint, outfit = OUTFITS.gang, cruise = 15, speedLimit = 18, fallback = null } = {}) {
+    const game = this.game;
+    const network = game.network;
+    const vehicle = this.spawnVehicle(type, 0, 0, 0, { paint });
+    const driver = this.spawnPerson('npc', 0, 0, outfit);
+    driver.vehicle = vehicle;
+    vehicle.driver = driver;
+    vehicle.engineOn = true;
+    const ai = new TrafficDriver(vehicle, network, game.city.signals, game.rng.fork(404));
+    const spot = network.randomLaneSpot(game.rng, near, 60, 120) ?? fallback;
+    ai.place(spot.from, spot.to, spot.lane, spot.t);
+    ai.cruise = cruise;
+    ai.speedLimit = speedLimit;
+    ai.startPanic(9999);
+    vehicle.ai = ai;
+    return vehicle;
+  }
+
+  /** The driver of a stopped mission car jumps out at (x, z) and runs from Kai as a pedestrian. */
+  bailOut(vehicle, x, z) {
+    const driver = vehicle.driver;
+    if (!driver || driver.kind === 'player') return;
+    const game = this.game;
+    vehicle.driver = null;
+    vehicle.ai = null;
+    driver.vehicle = null;
+    driver.x = x;
+    driver.z = z;
+    driver.brain = new PedestrianBrain(driver, game.rng.fork(driver.id), nearestCorner(x, z));
+    driver.brain.scare(game.player.character.x, game.player.character.z, 20);
   }
 
   start(def) {

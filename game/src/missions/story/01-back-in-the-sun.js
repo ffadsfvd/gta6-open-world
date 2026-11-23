@@ -1,6 +1,6 @@
 // Story 1 — Back in the Sun. Kai is home after three years away. Auntie Lou sends him to her
 // old friend Juno for work; first he needs a car, and in Ondaluz you take one.
-import { PLACES } from '../../world/cityPlan.js';
+import { PLACES } from '../../world/places.js';
 import { getInAnyVehicle, goTo, talk } from '../missionSteps.js';
 
 export default {

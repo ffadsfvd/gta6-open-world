@@ -1,6 +1,6 @@
 // Story 2 — Paint Job. Juno's collector wants a Vexa GT: steal the red one from the Suncrest
 // Hotel valet, shake the police the valet calls, and deliver it to the garage in one piece.
-import { PLACES } from '../../world/cityPlan.js';
+import { PLACES } from '../../world/places.js';
 import { call, deliver, enterVehicle, guardVehicle, loseCops, talk } from '../missionSteps.js';
 import { OUTFITS } from '../../characters/appearance.js';
 

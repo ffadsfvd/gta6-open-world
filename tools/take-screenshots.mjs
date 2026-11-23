@@ -1,10 +1,12 @@
 // Takes the entry's screenshots: serves game/ with serve.ts, launches Chrome with remote
 // debugging, opens each ?shot= scene from shots.json, waits for window.__shotReady and saves a
-// 1280x720 JPEG through the DevTools Protocol (Page.captureScreenshot), at most 256 KiB each.
+// 1280x800 (16:10) JPEG through the DevTools Protocol (Page.captureScreenshot), lowering the
+// quality until it is at most about 230 KiB (the gate allows 256 KiB).
 //
 //   node tools/take-screenshots.mjs                  every shot in shots.json -> screenshots/
 //   node tools/take-screenshots.mjs --only 1-cover   one shot of shots.json
 //   node tools/take-screenshots.mjs --query "?preview=0,80,200,0,0" --out tmp/preview.jpg
+//   GAME_CHECKOUT=tmp/baseline ...                   serve another copy of the game
 //
 // Console messages and page errors are printed, so the same run doubles as a smoke test.
 import { spawn } from 'node:child_process';
@@ -14,12 +16,14 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const serveRoot = process.env.GAME_CHECKOUT ? resolve(root, process.env.GAME_CHECKOUT) : root;
 const CHROME = process.env.CHROME_PATH ?? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const SERVE_PORT = 8123;
 const DEBUG_PORT = 9333;
-const WIDTH = 1280;
-const HEIGHT = 720;
+const WIDTH = Number(process.env.SHOT_WIDTH) || 1280;
+const HEIGHT = Number(process.env.SHOT_HEIGHT) || 800;
 const MAX_BYTES = 256 * 1024;
+const TARGET_BYTES = 230 * 1024;
 
 function argument(name) {
   const index = process.argv.indexOf(name);
@@ -121,10 +125,10 @@ async function capture(cdp, url, outFile, timeoutMs, evaluate = null) {
     else console.log(`  script: ${JSON.stringify(result.result.value, null, 1)}`);
     await sleep(300);
   }
-  for (let quality = 92; quality >= 40; quality -= 6) {
+  for (let quality = 92; quality >= 40; quality -= 3) {
     const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality, captureBeyondViewport: false });
     const bytes = Buffer.from(shot.data, 'base64');
-    if (bytes.length <= MAX_BYTES || quality <= 46) {
+    if (bytes.length <= TARGET_BYTES || quality <= 46) {
       mkdirSync(dirname(outFile), { recursive: true });
       writeFileSync(outFile, bytes);
       const size = jpegSize(bytes);
@@ -150,7 +154,7 @@ async function main() {
     }
   }
 
-  const server = spawn(process.execPath, [join(root, 'serve.ts'), '--port', String(SERVE_PORT)], { stdio: 'ignore' });
+  const server = spawn(process.execPath, [join(serveRoot, 'serve.ts'), '--port', String(SERVE_PORT)], { stdio: 'ignore' });
   const profile = mkdtempSync(join(tmpdir(), 'ondaluz-chrome-'));
   const chrome = spawn(CHROME, [
     '--headless=new',

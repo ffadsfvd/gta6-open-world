@@ -1,4 +1,5 @@
-// Bayside Arms: buy guns once the story unlocks them, ammunition, body armour and first aid.
+// Bayside Arms: buy guns once the story (and, for the heavier ones, Kai's street rank) unlocks
+// them, ammunition, body armour and first aid.
 // Opens on E at the shop's marker; click or press 1-9 and 0, Escape or E to leave.
 import { formatMoney } from '../core/mathUtils.js';
 import { WEAPONS } from '../combat/weapons.js';
@@ -19,11 +20,15 @@ export class ShopPanel {
       { label, price: WEAPONS[id].price, ok: unlocked && !arsenal.owned[id], note: unlocked ? (arsenal.owned[id] ? 'Owned' : '') : lockedNote, buy: () => arsenal.give(id, rounds) },
       { label: `${label} ammo ×${WEAPONS[id].ammoPack}`, price: WEAPONS[id].ammoPrice, ok: arsenal.owned[id], note: arsenal.owned[id] ? '' : `Need the ${label.toLowerCase()}`, buy: () => arsenal.addAmmo(id, WEAPONS[id].ammoPack) },
     ];
+    const rank = game.rank;
+    const needs = (story, rankName, storyNote) => (!story ? storyNote : !rank.atLeast(rankName) ? `Needs rank: ${rankName}` : '');
+    const shotgunNote = needs(unlocks.pistol, 'Corner Hustler', 'Unlocks in the story');
+    const rifleNote = needs(game.progress.storyIndex >= 5, 'Street Fixer', 'Unlocks after Badge Trouble');
     return [
       ...gun('pistol', 'Pistol', unlocks.pistol, 'Unlocks in the story', 24),
-      ...gun('shotgun', 'Shotgun', unlocks.pistol, 'Unlocks in the story', 12),
+      ...gun('shotgun', 'Shotgun', !shotgunNote, shotgunNote, 12),
       ...gun('smg', 'SMG', unlocks.smg, 'Unlocks in the story', 60),
-      ...gun('rifle', 'Marksman Rifle', game.progress.storyIndex >= 5, 'Unlocks after Badge Trouble', 16),
+      ...gun('rifle', 'Marksman Rifle', !rifleNote, rifleNote, 16),
       { label: 'Body armour', price: 250, ok: unlocks.armour && hero.armour < 100, note: unlocks.armour ? (hero.armour >= 100 ? 'Full' : '') : 'Unlocks in the story', buy: () => { hero.armour = 100; } },
       { label: 'First aid', price: 100, ok: hero.health < hero.maxHealth, note: hero.health >= hero.maxHealth ? 'Healthy' : '', buy: () => { hero.health = hero.maxHealth; } },
     ];

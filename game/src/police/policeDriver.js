@@ -8,6 +8,20 @@ const REPLAN_SECONDS = 1.4;
 /** Top pursuit speed by wanted level (m/s): one star is a patrol car, five stars is a pursuit unit. */
 const PURSUIT_SPEED = [0, 25, 29, 33, 40, 46];
 
+/** The tactic a cruiser is using this frame, named the way dispatch would say it. */
+function describeBehaviour({ search, headOn, clear, footTarget, distance, level, alongside }) {
+  if (search) return 'Searching';
+  if (headOn) return 'Pulling over';
+  if (!clear) return distance < 120 ? 'Closing in' : 'Responding';
+  if (footTarget) return distance < 25 ? 'Stopping to arrest' : 'Chasing';
+  if (distance < 22) {
+    if (level >= 4) return 'Ramming';
+    if (alongside) return 'Boxing in';
+    return 'Tailing';
+  }
+  return alongside ? 'Boxing in' : 'Chasing';
+}
+
 export class PoliceDriver {
   constructor(vehicle, rng) {
     this.vehicle = vehicle;
@@ -21,6 +35,8 @@ export class PoliceDriver {
     this.side = rng.chance(0.5) ? 1 : -1;
     this.mode = 'pursue';
     this.hold = null;
+    /** What the unit is doing right now, in dispatch words (the HUD's police panel reads it). */
+    this.behaviour = 'Responding';
   }
 
   plan(game, tx, tz) {
@@ -78,6 +94,7 @@ export class PoliceDriver {
     }
     vehicle.siren = true;
     if (this.mode === 'block') {
+      this.behaviour = 'Roadblock';
       vehicle.clearControls();
       controls.handbrake = true;
       return;
@@ -162,8 +179,10 @@ export class PoliceDriver {
       wanted = Math.max(4, targetSpeed + push);
     }
     if (local.z < 0) wanted = Math.min(wanted, 12);
+    this.behaviour = describeBehaviour({ search, headOn, clear, footTarget, distance, level, alongside: Boolean(player.vehicle) && clear && distance < 26 && level >= 3 });
     // Stuck: wanted to go but did not move; back up with the wheel turned the other way.
     if (this.reverse > 0) {
+      this.behaviour = 'Backing out';
       this.reverse -= dt;
       controls.throttle = 0;
       controls.brake = 1;

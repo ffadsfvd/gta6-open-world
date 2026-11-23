@@ -189,6 +189,13 @@ export class PoliceHelicopter {
     return delta * Math.min(1, dt * 1.5);
   }
 
+  /** What the air unit is doing, in dispatch words (the HUD's police panel reads it). */
+  get behaviour() {
+    if (this.leaving) return 'Returning to base';
+    if (this.seesPlayer) return 'Spotlight on you';
+    return this.game.wanted.searching ? 'Sweeping the area' : 'Tracking';
+  }
+
   despawn() {
     this.active = false;
     this.leaving = false;

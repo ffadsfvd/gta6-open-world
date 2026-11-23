@@ -1,6 +1,6 @@
 // The people of the story: names, colours and portrait features for dialogue, and where the
 // mission givers wait for Kai.
-import { PLACES } from '../world/cityPlan.js';
+import { PLACES } from '../world/places.js';
 import { OUTFITS } from '../characters/appearance.js';
 
 export const CAST = {

@@ -4,6 +4,7 @@
 import { GAME_TITLE } from '../core/config.js';
 import { STAT_LABELS } from '../progression/progress.js';
 import { formatMoney } from '../core/mathUtils.js';
+import { gameFeatures } from './featureLine.js';
 
 const CONTROLS = [
   ['W A S D / arrows', 'Move / drive'], ['Mouse', 'Look around (click to capture)'], ['Shift', 'Sprint'],
@@ -92,6 +93,7 @@ export class Menus {
       <div class="title-card">
         <div class="logo"><span class="logo-top">ONDALUZ</span><span class="logo-bottom">UNDERCURRENT</span></div>
         <p class="tagline">Sun, sea and bad decisions on the Atlantic coast</p>
+        <ul class="feature-line">${gameFeatures().map((feature) => `<li>${feature}</li>`).join('')}</ul>
         <div class="menu-list"></div>
         <p class="title-footer">An original open-world crime story · every name, place and tune is invented for this game</p>
       </div>`, [

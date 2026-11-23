@@ -1,5 +1,5 @@
-// The player's career: money, story progress, unlocks, collected sunshells and the stats
-// screen (cars stolen, distance driven, races won, fares, deliveries, escapes and more).
+// The player's career: money, street respect, story progress, unlocks, collected sunshells and
+// the stats screen (cars stolen, distance driven, races won, fares, deliveries, escapes and more).
 
 export const STAT_LABELS = {
   missionsPassed: 'Story missions passed',
@@ -26,6 +26,7 @@ export class Progress {
 
   reset() {
     this.money = 250;
+    this.respect = 0;
     this.completed = [];
     this.storyIndex = 0;
     this.unlocks = { pistol: false, armour: false, smg: false };
@@ -60,13 +61,15 @@ export class Progress {
   }
 
   toJSON() {
-    return { money: this.money, completed: [...this.completed], storyIndex: this.storyIndex, unlocks: { ...this.unlocks }, shells: [...this.shells], stats: { ...this.stats } };
+    return { money: this.money, respect: this.respect, completed: [...this.completed], storyIndex: this.storyIndex, unlocks: { ...this.unlocks }, shells: [...this.shells], stats: { ...this.stats } };
   }
 
   load(data) {
     this.reset();
     if (!data) return;
     this.money = data.money ?? this.money;
+    // Saves from before street respect existed: credit what the career already shows.
+    this.respect = data.respect ?? Math.round((data.completed ?? []).length * 600 + (data.stats?.sideJobs ?? 0) * 120);
     this.completed = data.completed ?? [];
     this.storyIndex = data.storyIndex ?? 0;
     this.unlocks = { ...this.unlocks, ...data.unlocks };

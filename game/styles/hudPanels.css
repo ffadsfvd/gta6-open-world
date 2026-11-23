@@ -1,0 +1,485 @@
+/* The HUD's information panels: one rounded dark style with high-contrast text, a coloured
+   accent per panel, and single lines that end in an ellipsis instead of wrapping. */
+.hud-panel {
+  box-sizing: border-box;
+  padding: 7px 11px 8px;
+  border-radius: 12px;
+  background: rgba(11, 9, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  color: #fff6ea;
+  font: 600 13px/1.3 var(--hud-font);
+  min-width: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.panel-kicker {
+  flex: none;
+  font: 800 10.5px var(--hud-font);
+  letter-spacing: 1.4px;
+  color: #ffb347;
+}
+
+.panel-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: italic 900 16px var(--display-font);
+  color: #ffffff;
+}
+
+.meter {
+  position: relative;
+  display: block;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.meter b {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ffd23f, #ff8c42);
+  transition: width 0.3s ease;
+}
+
+/* Mission tracker. */
+#mission-tracker {
+  border-left: 4px solid #ffd23f;
+}
+
+#mission-tracker .panel-kicker {
+  color: #ffd23f;
+}
+
+.stage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 3px;
+}
+
+.stage-label {
+  flex: none;
+  font: 800 10.5px var(--hud-font);
+  letter-spacing: 1.2px;
+  color: #d9d3ff;
+}
+
+.stage-row .meter {
+  flex: 1;
+}
+
+.stage-timer {
+  flex: none;
+  font: italic 900 16px var(--display-font);
+  color: #ffffff;
+}
+
+.stage-timer.urgent {
+  color: #ff5a5f;
+}
+
+.tracker-objective {
+  margin: 0;
+  font: 700 14px/1.3 var(--hud-font);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tracker-objective em, .tracker-next em, .tracker-status em {
+  font-style: normal;
+  color: #ffd23f;
+}
+
+.tracker-next {
+  display: flex;
+  gap: 6px;
+  margin: 3px 0 0;
+  font: 600 12px/1.3 var(--hud-font);
+  color: rgba(255, 246, 234, 0.8);
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.tracker-next span:first-child {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  font: 800 9.5px/15px var(--hud-font);
+  letter-spacing: 1px;
+}
+
+.tracker-next span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.tracker-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 5px 0 0;
+}
+
+.tracker-status:empty {
+  display: none;
+}
+
+.tracker-status div {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 210, 63, 0.13);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tracker-status dt {
+  font: 800 9.5px var(--hud-font);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 246, 234, 0.7);
+}
+
+.tracker-status dd {
+  margin: 0;
+  font: 800 12.5px var(--hud-font);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Police response. */
+#police-response {
+  border-left: 4px solid #ff3b4f;
+  background: linear-gradient(160deg, rgba(40, 8, 20, 0.82), rgba(10, 16, 44, 0.8));
+}
+
+#police-response .panel-kicker {
+  color: #ff6b7a;
+}
+
+#police-response .panel-title {
+  font: 800 12px var(--hud-font);
+  color: #9fd3ff;
+  text-align: right;
+}
+
+.unit-list {
+  margin: 4px 0 3px;
+  padding: 0;
+  list-style: none;
+}
+
+.unit-list li {
+  display: grid;
+  grid-template-columns: 16px 88px 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  font: 600 12.5px/18px var(--hud-font);
+  white-space: nowrap;
+}
+
+.unit-list b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 800;
+}
+
+.unit-distance {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 246, 234, 0.8);
+}
+
+.unit-behaviour {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #9fd3ff;
+}
+
+.unit-list li.hot .unit-behaviour {
+  color: #ff8a8a;
+  font-weight: 800;
+}
+
+.unit-icon {
+  display: block;
+  justify-self: center;
+}
+
+.unit-icon.car {
+  width: 14px;
+  height: 8px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ff3b4f 50%, #3d7bff 50%);
+}
+
+.unit-icon.foot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3d7bff;
+  box-shadow: 0 0 0 2px rgba(61, 123, 255, 0.35);
+}
+
+.unit-icon.air {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: #ffd23f;
+  box-shadow: 0 4px 0 -1px #ffd23f;
+}
+
+.police-status {
+  margin: 0;
+  font: italic 700 12px/1.3 var(--hud-font);
+  color: #ffd9a8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.escape-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font: 800 9.5px var(--hud-font);
+  letter-spacing: 1px;
+  color: rgba(255, 246, 234, 0.7);
+}
+
+.escape-row .meter {
+  flex: 1;
+}
+
+.escape-row .meter b {
+  background: linear-gradient(90deg, #3d7bff, #4fe08a);
+}
+
+/* Street rank. */
+#rank-progress {
+  border-right: 4px solid #c77dff;
+}
+
+#rank-progress .panel-kicker {
+  color: #d7a8ff;
+}
+
+#rank-progress .meter {
+  margin: 5px 0 3px;
+}
+
+#rank-progress .meter b {
+  background: linear-gradient(90deg, #9d4edd, #ff5fa2);
+}
+
+#rank-progress.flash {
+  animation: rank-flash 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes rank-flash {
+  to { border-color: #ffd23f; box-shadow: 0 0 18px rgba(255, 210, 63, 0.6); }
+}
+
+.rank-respect {
+  margin: 0;
+  font: 700 11.5px var(--hud-font);
+  color: rgba(255, 246, 234, 0.82);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Weapon bar. */
+#weapon-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+  padding: 4px;
+}
+
+.weapon-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 1px 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffe3b0;
+  min-width: 0;
+}
+
+.weapon-slot.selected {
+  border-color: #ffd23f;
+  background: rgba(255, 210, 63, 0.24);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 210, 63, 0.35);
+}
+
+.weapon-slot.locked {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.weapon-slot.empty .slot-ammo {
+  color: #ff8a8a;
+}
+
+.slot-key {
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  font: 800 9px var(--hud-font);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.slot-icon svg {
+  display: block;
+  width: 40px;
+  height: 22px;
+}
+
+.slot-name {
+  max-width: 100%;
+  font: 800 9px var(--hud-font);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-ammo {
+  font: 800 12px/14px var(--hud-font);
+  white-space: nowrap;
+  color: #ffffff;
+}
+
+.weapon-slot.locked .slot-ammo {
+  font-size: 8.5px;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.slot-ammo small {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.slot-ammo .lock {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+  vertical-align: -1px;
+}
+
+/* Vehicle and radio. */
+#vehicle-panel {
+  border-right: 4px solid #2ec4d6;
+  padding-bottom: 7px;
+}
+
+#vehicle-panel .panel-kicker {
+  color: #7fe7f5;
+}
+
+.speed-dial {
+  display: block;
+  width: 224px;
+  height: 120px;
+  margin: 0 auto;
+}
+
+.condition-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 800 9.5px var(--hud-font);
+  letter-spacing: 1px;
+  color: rgba(255, 246, 234, 0.75);
+}
+
+.condition-row .meter {
+  flex: 1;
+}
+
+.condition-row .meter b.good {
+  background: linear-gradient(90deg, #1f9d55, #7bed9f);
+}
+
+.condition-row .meter b.worn {
+  background: linear-gradient(90deg, #e09f00, #ffd166);
+}
+
+.condition-row .meter b.bad {
+  background: linear-gradient(90deg, #c1121f, #ff5a5f);
+}
+
+.condition-value {
+  font: 800 12px var(--hud-font);
+  color: #ffffff;
+  min-width: 34px;
+  text-align: right;
+}
+
+.vehicle-warning {
+  margin: 4px 0 0;
+  text-align: center;
+  font: 900 11px var(--hud-font);
+  letter-spacing: 1px;
+  color: #ff5a5f;
+  animation: pulse-bar 0.5s ease-in-out infinite alternate;
+}
+
+#radio-now-playing {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: 6px;
+  padding: 5px 11px 6px;
+  border-right: 4px solid #ff5fa2;
+}
+
+.radio-note {
+  grid-row: span 2;
+  align-self: center;
+  font: 900 16px var(--hud-font);
+  color: #ff9ecb;
+}
+
+.radio-track, .radio-station {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.radio-track {
+  font: 800 12.5px var(--hud-font);
+}
+
+.radio-station {
+  font: 700 10.5px var(--hud-font);
+  letter-spacing: 0.8px;
+  color: #b8f1ff;
+}

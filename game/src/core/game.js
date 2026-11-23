@@ -1,31 +1,33 @@
-// The game object: builds the renderer, sky, light and city, owns every system (player,
-// vehicles, people, traffic, police, combat, missions, activities, HUD, menus, audio, saves)
-// and moves between title, intro, playing, paused and map, one update and one render a frame.
+// The game object: builds the renderer, sky, light and city, owns every system (story missions,
+// police and helicopter, vehicles, combat, side jobs, street rank, HUD, menus, audio, saves) and
+// moves between title, intro, playing, paused and map, one update and one render a frame.
 import * as THREE from 'three';
 import { STORYLINE } from '../missions/storyline.js';
 import { MissionRunner } from '../missions/missionRunner.js';
+import { PhoneCalls } from '../missions/phoneCalls.js';
 import { WantedSystem } from '../police/wantedSystem.js';
 import { PoliceDispatcher } from '../police/policeDispatcher.js';
 import { PoliceHelicopter } from '../police/policeHelicopter.js';
 import { VehicleManager } from '../vehicles/vehicleManager.js';
-import { ActivityManager } from '../activities/activityManager.js';
 import { CombatSystem } from '../combat/combatSystem.js';
 import { WEAPONS } from '../combat/weapons.js';
+import { ActivityManager } from '../activities/activityManager.js';
+import { Progress } from '../progression/progress.js';
+import { RespectRank } from '../progression/respectRank.js';
 import { Hud } from '../ui/hud.js';
+import { FullMap } from '../ui/fullMap.js';
+import { Menus } from '../ui/menus.js';
+import { DialogueBox } from '../ui/dialogueBox.js';
 import { AudioDirector } from '../audio/audioDirector.js';
 import { PopulationManager } from '../ai/populationManager.js';
 import { CharacterManager } from '../characters/characterManager.js';
 import { PlayerController } from '../characters/playerController.js';
 import { PlayerVitals } from '../characters/playerVitals.js';
 import { OUTFITS } from '../characters/appearance.js';
-import { FullMap } from '../ui/fullMap.js';
-import { Menus } from '../ui/menus.js';
-import { DialogueBox } from '../ui/dialogueBox.js';
 import { Notifications } from '../ui/notifications.js';
 import { ShopPanel } from '../ui/shopPanel.js';
 import { ScreenEffects } from '../ui/screenEffects.js';
 import { MapPainter } from '../ui/mapPainter.js';
-import { Progress } from '../progression/progress.js';
 import { SaveGame } from '../save/saveGame.js';
 import { loadSettings, saveSettings } from '../save/settings.js';
 import { WorldMarkers } from '../missions/worldMarkers.js';
@@ -108,6 +110,7 @@ export class Game {
     this.streetLights = new StreetLights(this.city.props);
     this.network = new RoadNetwork();
     this.progress = new Progress(this.events);
+    this.rank = new RespectRank(this.progress, this.events);
     this.vehicles = new VehicleManager(this);
     this.characters = new CharacterManager(this);
     const start = PLACES.start;
@@ -127,6 +130,7 @@ export class Game {
     this.hud = new Hud(this, this.painter);
     this.fullMap = new FullMap(this, this.painter);
     this.missions = new MissionRunner(this);
+    this.phoneCalls = new PhoneCalls(this);
     this.activities = new ActivityManager(this);
     this.markers = new WorldMarkers(this.scene);
     this.intro = new IntroSequence(this);
@@ -163,6 +167,7 @@ export class Game {
     events.on('missionPassed', (e) => {
       if (e.story) this.notifications.toast(`Story ${this.progress.storyIndex}/${STORYLINE.length} complete`, '', 4);
     });
+    events.on('rankUp', (e) => this.notifications.toast(`Rank up: ${e.name}`, 'rank', 5));
     events.on('storyComplete', () => {
       setTimeout(() => this.notifications.banner('THE END', `${CITY_NAME} is yours. Keep exploring: races, fares, deliveries and sunshells await.`, '', 8), 5000);
     });

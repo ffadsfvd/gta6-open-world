@@ -11,6 +11,9 @@ const NOTE = (name) => {
 export const STATIONS = [
   {
     name: 'BRISA FM 101.7 — Dusk Synth',
+    station: 'BRISA FM 101.7',
+    track: 'Neon Undertow',
+    artist: 'Coral Static',
     bpm: 104,
     chords: [['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['C3', 'E3', 'G3'], ['G3', 'B3', 'D4']],
     bass: ['A1', 'F1', 'C2', 'G1'],
@@ -23,6 +26,9 @@ export const STATIONS = [
   },
   {
     name: 'RADIO MANGO 94.3 — Ritmo Tropical',
+    station: 'RADIO MANGO 94.3',
+    track: 'Malecón a Medianoche',
+    artist: 'Los Pelícanos',
     bpm: 96,
     chords: [['D4', 'F4', 'A4'], ['A#3', 'D4', 'F4'], ['F3', 'A3', 'C4'], ['C4', 'E4', 'G4']],
     bass: ['D2', 'A#1', 'F1', 'C2'],
@@ -36,6 +42,9 @@ export const STATIONS = [
   },
   {
     name: 'WAVELENGTH 88.1 — Lo-fi Beach',
+    station: 'WAVELENGTH 88.1',
+    track: 'Low Tide Tapes',
+    artist: 'Saltwater Kid',
     bpm: 80,
     chords: [['E3', 'G3', 'B3', 'D4'], ['A3', 'C4', 'E4', 'G4'], ['D3', 'F#3', 'A3', 'C4'], ['G3', 'B3', 'D4', 'F#4']],
     bass: ['E2', 'A1', 'D2', 'G1'],

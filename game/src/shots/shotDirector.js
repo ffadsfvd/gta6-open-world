@@ -3,7 +3,8 @@
 // renders and sets window.__shotReady. Scenes: cover (police chase), street (plaza shootout),
 // map (full-screen city map) and title (start screen).
 import { PLACES } from '../world/cityPlan.js';
-import { loseCops, eliminate, goTo, race } from '../missions/missionSteps.js';
+import { loseCops, eliminate, goTo } from '../missions/missionSteps.js';
+import { race } from '../missions/raceStep.js';
 import { TrafficDriver } from '../ai/trafficDriver.js';
 import { RaceDriver } from '../ai/raceDriver.js';
 import { PedestrianBrain } from '../ai/pedestrianBrain.js';

@@ -1,6 +1,6 @@
 // Story 3 — Taco Tuesday. Crane's crew is scaring the lunch crowd away from Lou's taco truck
 // in Mercado Plaza. Kai runs them off for good.
-import { PLACES } from '../../world/cityPlan.js';
+import { PLACES } from '../../world/places.js';
 import { call, eliminate, goTo, talk } from '../missionSteps.js';
 
 export default {

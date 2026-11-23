@@ -4,6 +4,7 @@
 import { OUTFITS } from '../characters/appearance.js';
 import { PoliceDriver } from './policeDriver.js';
 import { OfficerBrain } from './officerBrain.js';
+import { cruiserCallSign, officerCallSign } from './callSigns.js';
 import { TrafficDriver } from '../ai/trafficDriver.js';
 import { groundHeight } from '../world/terrain.js';
 
@@ -40,6 +41,7 @@ export class PoliceDispatcher {
     const look = { ...OUTFITS.police, skin: this.rng.pick(['#e0ac69', '#c68642', '#8d5524', '#f1c27d']) };
     const officer = this.game.characters.spawn('police', x, z, look, { health: 90 });
     officer.weapon = 'pistol';
+    officer.callSign = officerCallSign(this.rng);
     return officer;
   }
 
@@ -47,6 +49,7 @@ export class PoliceDispatcher {
   spawnUnit(spot, chasing = true) {
     const game = this.game;
     const vehicle = game.vehicles.spawn('police', spot.x, spot.z, spot.yaw, { role: 'police' });
+    vehicle.callSign = cruiserCallSign(vehicle.id);
     const driver = this.makeOfficer(spot.x, spot.z);
     driver.vehicle = vehicle;
     vehicle.driver = driver;
@@ -89,6 +92,7 @@ export class PoliceDispatcher {
       vehicle.ai = new PoliceDriver(vehicle, this.rng.fork(vehicle.id));
       vehicle.siren = true;
       vehicle.role = 'police';
+      if (!vehicle.callSign) vehicle.callSign = cruiserCallSign(vehicle.id);
       const known = this.units.find((unit) => unit.vehicle === vehicle);
       if (!known) this.units.push({ vehicle, crew: [vehicle.driver], deployed: false });
     }
