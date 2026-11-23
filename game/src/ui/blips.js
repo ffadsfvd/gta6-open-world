@@ -1,6 +1,7 @@
 // What the maps show: police units, mission targets and enemies, contacts with their letter,
-// activities (races, taxi, deliveries, shop, safehouse, hospital, police HQ), and the GPS route
-// to the current objective along the street grid.
+// activities (races, taxi, deliveries, shop, safehouse, hospital, police HQ), the player's own
+// waypoint, and the GPS route to the current objective along the street grid.
+import { WAYPOINT_COLOR } from './gpsWaypoint.js';
 
 const CONTACT_COLORS = { lou: '#ff7aa2', juno: '#2ec4b6', voss: '#8d99ae' };
 
@@ -31,6 +32,9 @@ export function collectBlips(game) {
   }
   if (game.activities) {
     for (const spot of game.activities.mapSpots()) blips.push({ ...spot, size: spot.size ?? 8 });
+  }
+  if (game.waypoint && game.waypoint.point) {
+    blips.push({ x: game.waypoint.point.x, z: game.waypoint.point.z, kind: 'waypoint', color: WAYPOINT_COLOR, size: 7, edge: true, label: 'Waypoint' });
   }
   return blips;
 }

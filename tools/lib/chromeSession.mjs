@@ -88,6 +88,9 @@ function keyInfo(code, shift) {
     ArrowDown: { key: 'ArrowDown', vk: 40 },
     ArrowLeft: { key: 'ArrowLeft', vk: 37 },
     ArrowRight: { key: 'ArrowRight', vk: 39 },
+    Minus: { key: shift ? '_' : '-', vk: 189, text: shift ? '_' : '-' },
+    Equal: { key: shift ? '+' : '=', vk: 187, text: shift ? '+' : '=' },
+    Delete: { key: 'Delete', vk: 46 },
   };
   const info = table[code];
   if (!info) throw new Error(`No key mapping for ${code}`);
@@ -224,6 +227,25 @@ export class Player {
     await this.mouseDown(button);
     await sleep(ms);
     await this.mouseUp(button);
+    await sleep(80);
+  }
+
+  /** Turns the mouse wheel at (x, y): negative deltaY scrolls up (zoom in on a map). */
+  async wheel(deltaY, x = this.mouse.x, y = this.mouse.y) {
+    await this.mouseMove(x, y);
+    await this.cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: this.mouse.x, y: this.mouse.y, deltaX: 0, deltaY, buttons: this.buttons, modifiers: this.modifiers });
+    await sleep(60);
+  }
+
+  /** Presses the left button at (x0, y0), drags to (x1, y1) in steps and lets go. */
+  async drag(x0, y0, x1, y1, steps = 12) {
+    await this.mouseMove(x0, y0);
+    await this.mouseDown('left');
+    for (let step = 1; step <= steps; step += 1) {
+      await this.mouseMove(x0 + ((x1 - x0) * step) / steps, y0 + ((y1 - y0) * step) / steps);
+      await sleep(16);
+    }
+    await this.mouseUp('left');
     await sleep(80);
   }
 

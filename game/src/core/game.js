@@ -28,6 +28,7 @@ import { Notifications } from '../ui/notifications.js';
 import { ShopPanel } from '../ui/shopPanel.js';
 import { ScreenEffects } from '../ui/screenEffects.js';
 import { MapPainter } from '../ui/mapPainter.js';
+import { GpsWaypoint } from '../ui/gpsWaypoint.js';
 import { SaveGame } from '../save/saveGame.js';
 import { loadSettings, saveSettings } from '../save/settings.js';
 import { WorldMarkers } from '../missions/worldMarkers.js';
@@ -127,6 +128,7 @@ export class Game {
     this.notifications = new Notifications();
     this.dialogue = new DialogueBox(this.events);
     this.painter = new MapPainter(this.city.plans);
+    this.waypoint = new GpsWaypoint(this.events);
     this.hud = new Hud(this, this.painter);
     this.fullMap = new FullMap(this, this.painter);
     this.missions = new MissionRunner(this);
@@ -270,6 +272,7 @@ export class Game {
     }
     if (this.state === 'map') {
       if (input.wasPressed('map') || input.wasPressed('pause')) this.resume();
+      else this.fullMap.handleKeys(input);
       return;
     }
     if (this.state === 'intro') return;
@@ -298,6 +301,7 @@ export class Game {
         this.activities.update(dt);
         this.fate.update(dt);
         this.vitals.update(dt);
+        this.waypoint.update(this.player.character);
         this.trackStats(dt);
       }
       this.population.update(dt);

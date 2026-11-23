@@ -49,7 +49,7 @@ export class Minimap {
     ctx.drawImage(this.painter.canvas, -px, -py);
     ctx.restore();
     if (route && route.length > 1) {
-      ctx.strokeStyle = '#ffcf33';
+      ctx.strokeStyle = this.routeColor ?? '#ffcf33';
       ctx.lineWidth = 9;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
@@ -121,7 +121,25 @@ export class Minimap {
 export function drawBlip(ctx, blip, x, y, scale = 1) {
   const size = blip.size * scale;
   ctx.save();
-  if (blip.letter) {
+  if (blip.kind === 'waypoint') {
+    // A map pin: a diamond with a white rim.
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(x, y - size - 4);
+    ctx.lineTo(x + size + 4, y);
+    ctx.lineTo(x, y + size + 4);
+    ctx.lineTo(x - size - 4, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = blip.color;
+    ctx.beginPath();
+    ctx.moveTo(x, y - size);
+    ctx.lineTo(x + size, y);
+    ctx.lineTo(x, y + size);
+    ctx.lineTo(x - size, y);
+    ctx.closePath();
+    ctx.fill();
+  } else if (blip.letter) {
     ctx.fillStyle = '#1b1b24';
     ctx.beginPath();
     ctx.arc(x, y, size + 3, 0, Math.PI * 2);

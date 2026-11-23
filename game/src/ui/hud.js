@@ -7,6 +7,7 @@ import { formatMoney } from '../core/mathUtils.js';
 import { districtName, streetNameAt } from '../world/cityPlan.js';
 import { Minimap } from './minimap.js';
 import { collectBlips, gpsRoute } from './blips.js';
+import { routeGoal, WAYPOINT_COLOR } from './gpsWaypoint.js';
 import { MissionTracker } from './missionTracker.js';
 import { PoliceResponsePanel } from './policeResponsePanel.js';
 import { WeaponBar } from './weaponBar.js';
@@ -123,7 +124,7 @@ export class Hud {
     if (Math.abs(target - this.shownMoney) < 1) this.shownMoney = target;
     // Minimap, route and the car's dial every frame.
     this.routeTimer -= dt;
-    const goal = game.missions ? game.missions.routeTarget() : null;
+    const goal = routeGoal(game);
     if (goal && this.routeTimer <= 0) {
       this.route = gpsRoute(game, player.x, player.z, goal.x, goal.z);
       this.routeTimer = 0.8;
@@ -131,6 +132,7 @@ export class Hud {
       this.route = null;
     }
     if (this.route) this.route[0] = { x: player.x, z: player.z };
+    this.minimap.routeColor = game.waypoint && game.waypoint.active ? WAYPOINT_COLOR : null;
     this.minimap.draw(game, collectBlips(game), this.route, dt);
     this.domTimer -= dt;
     const refresh = this.domTimer <= 0;

@@ -195,6 +195,15 @@ table.controls td:last-child {
   border-radius: 18px;
   border: 6px solid #fff4e3;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  cursor: crosshair;
+}
+
+#map-legend .keys {
+  display: block;
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: rgba(255, 244, 227, 0.8);
 }
 
 #map-legend {

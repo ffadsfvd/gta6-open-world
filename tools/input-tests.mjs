@@ -866,6 +866,67 @@ const TESTS = {
     }
   },
 
+  async mapWaypoint(t) {
+    const p = t.player;
+    await startNewGame(p);
+    await p.tap('KeyM');
+    await sleep(400);
+    t.check('M opens the city map', (await snapshot(p)).state === 'map');
+    const view = () => p.read('({ zoom: __game.fullMap.zoom, mx: __game.fullMap.center.mx, my: __game.fullMap.center.my })');
+    const box = await p.read("(() => { const r = document.getElementById('full-map-canvas').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, h: r.height }; })()");
+    const v0 = await view();
+    await p.wheel(-120, box.x + 80, box.y + 50);
+    await p.wheel(-120, box.x + 80, box.y + 50);
+    const v1 = await view();
+    t.check('the mouse wheel zooms in', v1.zoom > v0.zoom * 1.4, `${v0.zoom} -> ${v1.zoom}`);
+    await p.tap('Minus');
+    await sleep(150);
+    const v2 = await view();
+    t.check('- zooms out', v2.zoom < v1.zoom, `${v1.zoom} -> ${v2.zoom}`);
+    await p.tap('Equal');
+    await sleep(150);
+    const v3 = await view();
+    t.check('+ zooms in', v3.zoom > v2.zoom, `${v2.zoom} -> ${v3.zoom}`);
+    await p.drag(box.x, box.y, box.x - 160, box.y - 90);
+    const v4 = await view();
+    t.check('dragging pans the map', Math.hypot(v4.mx - v3.mx, v4.my - v3.my) > 40, `${Math.round(v4.mx - v3.mx)}, ${Math.round(v4.my - v3.my)}`);
+    t.check('a drag sets no waypoint', !(await p.read('__game.waypoint.active')));
+    // Click a spot a few blocks from Kai: the waypoint goes there.
+    const spot = await p.read('(() => { const h = __game.player.character; return __game.fullMap.pagePoint(h.x - 120, h.z - 90); })()');
+    await p.click(spot.x, spot.y);
+    await sleep(200);
+    const set = await p.read('(() => { const w = __game.waypoint.point, h = __game.player.character; return w ? { x: w.x, z: w.z, dx: w.x - h.x, dz: w.z - h.z } : null; })()');
+    t.check('a click on the map sets a waypoint there', set && Math.abs(set.dx + 120) < 6 && Math.abs(set.dz + 90) < 6, set);
+    if (!set) return;
+    const pinColour = (r, g, b) => r > 180 && g < 140 && b > 200;
+    const onMap = await p.read(`(() => { const m = __game.fullMap; m.draw(); const [cx, cy] = m.toScreen(${set.x}, ${set.z}); return [...m.ctx.getImageData(Math.round(cx), Math.round(cy), 1, 1).data]; })()`);
+    t.check('the waypoint shows on the full map', pinColour(...onMap), onMap);
+    await p.screenshot('tmp/tests/map-waypoint.jpg');
+    await p.tap('KeyM');
+    await sleep(1300);
+    const routed = await p.read(`(() => { const r = __game.hud.route; if (!r) return null; const end = r[r.length - 1]; return Math.hypot(end.x - ${set.x}, end.z - ${set.z}); })()`);
+    t.check('back in play the GPS route leads to the waypoint', routed !== null && routed < 1, routed);
+    const onMinimap = await p.read("(() => { const c = document.getElementById('minimap-canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i + 1] < 140 && d[i + 2] > 200) n += 1; return n; })()");
+    t.check('the minimap shows the waypoint', onMinimap > 20, onMinimap);
+    await p.screenshot('tmp/tests/minimap-waypoint.jpg');
+    // On the map again, a click on the waypoint clears it; a new one goes with Backspace.
+    await p.tap('KeyM');
+    await sleep(400);
+    const pin = await p.read(`__game.fullMap.pagePoint(${set.x}, ${set.z})`);
+    await p.click(pin.x, pin.y);
+    await sleep(200);
+    t.check('a click on the waypoint clears it', !(await p.read('__game.waypoint.active')));
+    await p.click(box.x + 40, box.y + 40);
+    await sleep(150);
+    const again = await p.read('__game.waypoint.active');
+    await p.tap('Backspace');
+    await sleep(150);
+    t.check('Backspace clears a waypoint', again && !(await p.read('__game.waypoint.active')));
+    await p.tap('KeyM');
+    await sleep(400);
+    t.check('M closes the map into play', (await snapshot(p)).state === 'playing');
+  },
+
   async saveAndContinue(t) {
     const p = t.player;
     await startNewGame(p);
