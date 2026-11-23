@@ -36,6 +36,20 @@ export function rankIndexFor(respect) {
   return index;
 }
 
+/**
+ * The respect a career's record adds up to under the rules above (saves from before respect was
+ * kept, and careers part-way through the story).
+ */
+export function respectForCareer(storyDone, stats = {}) {
+  return storyDone * RESPECT_FOR.storyMission
+    + (stats.fares ?? 0) * RESPECT_FOR.fare
+    + (stats.racesWon ?? 0) * RESPECT_FOR.raceWon
+    + Math.floor((stats.deliveries ?? 0) / 3) * RESPECT_FOR.delivery
+    + (stats.copsEscaped ?? 0) * RESPECT_FOR.escapePerStar * 2
+    + (stats.carsStolen ?? 0) * RESPECT_FOR.carStolen
+    + (stats.shells ?? 0) * RESPECT_FOR.sunshell;
+}
+
 export class RespectRank {
   constructor(progress, events) {
     this.progress = progress;

@@ -1,6 +1,6 @@
-// Boot: builds the game and opens the title screen. ?shot=cover|street|map|title stages a
-// deterministic screenshot scene instead (see shots/shotDirector.js); ?seed=N fixes the city
-// and ?hour=H sets the clock (0-24).
+// Boot: builds the game and opens the title screen. ?shot=cover|street|taxi|race|map|title stages
+// a deterministic screenshot scene from the real game instead (see shots/shotDirector.js);
+// ?seed=N fixes the city and ?hour=H sets the clock (0-24).
 import { Game } from './core/game.js';
 import { stageShot } from './shots/shotDirector.js';
 

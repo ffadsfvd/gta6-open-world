@@ -1,5 +1,6 @@
 // The player's career: money, street respect, story progress, unlocks, collected sunshells and
 // the stats screen (cars stolen, distance driven, races won, fares, deliveries, escapes and more).
+import { respectForCareer } from './respectRank.js';
 
 export const STAT_LABELS = {
   missionsPassed: 'Story missions passed',
@@ -69,7 +70,7 @@ export class Progress {
     if (!data) return;
     this.money = data.money ?? this.money;
     // Saves from before street respect existed: credit what the career already shows.
-    this.respect = data.respect ?? Math.round((data.completed ?? []).length * 600 + (data.stats?.sideJobs ?? 0) * 120);
+    this.respect = data.respect ?? respectForCareer((data.completed ?? []).length, data.stats ?? {});
     this.completed = data.completed ?? [];
     this.storyIndex = data.storyIndex ?? 0;
     this.unlocks = { ...this.unlocks, ...data.unlocks };

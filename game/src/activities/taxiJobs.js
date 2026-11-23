@@ -107,10 +107,11 @@ function dropPassenger(ctx, look) {
   if (game.population) game.population.walkers.push(person);
 }
 
-export function taxiFare(game, taxi) {
+/** A fare for the cab: a waiting passenger (at `at`, or a random sidewalk nearby) and a destination across town. */
+export function taxiFare(game, taxi, { at = null } = {}) {
   const rng = game.rng;
   const player = game.player.character;
-  const pickup = randomSidewalkSpot(rng, player, 70, 220) ?? { x: PLACES.plaza.x, z: PLACES.plaza.z - 31 };
+  const pickup = at ?? randomSidewalkSpot(rng, player, 70, 220) ?? { x: PLACES.plaza.x, z: PLACES.plaza.z - 31 };
   const options = DESTINATIONS.filter((d) => gap(d, pickup) > 140);
   const destination = rng.pick(options.length ? options : DESTINATIONS);
   // The streets run on a grid: the drive is about the sum of the two legs, not the straight line.
